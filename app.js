@@ -942,8 +942,17 @@ function initPlanTab() {
 const openCategoryBlocks = new Set();
 
 function renderCategoryManager() {
-    const container = document.getElementById('category-manager-list');
     const categories = getCategories();
+
+    const showWizard = categories.length === 0 && !setupSkipped;
+    document.getElementById('setup-wizard').classList.toggle('hidden', !showWizard);
+    document.getElementById('exercise-manager-normal').classList.toggle('hidden', showWizard);
+    if (showWizard) {
+        resetSetupWizard();
+        return;
+    }
+
+    const container = document.getElementById('category-manager-list');
     const exercises = getExercises();
 
     if (categories.length === 0) {
@@ -1146,6 +1155,94 @@ function initExercisesTab() {
         renderCategoryManager();
         refreshCategoryDependents();
     });
+
+    initSetupWizard();
+}
+
+// ============ FIRST-RUN SETUP WIZARD ============
+// Shown only while a user has zero categories. Reference data below is
+// static and shared by everyone - it costs nothing per-user, since it's
+// never written to Firestore.
+
+const SETUP_TEMPLATES = {
+    ppl: {
+        categories: {
+            'Push': ['Bench Press', 'Overhead Press', 'Incline Dumbbell Press', 'Chest Fly', 'Tricep Pushdown', 'Lateral Raise'],
+            'Pull': ['Pull-ups', 'Barbell Row', 'Lat Pulldown', 'Deadlift', 'Bicep Curl', 'Face Pulls'],
+            'Legs': ['Squat', 'Leg Press', 'Lunges', 'Leg Curl', 'Calf Raise', 'Hip Thrust'],
+            'Core': ['Plank', 'Crunches', 'Leg Raises', 'Russian Twists'],
+            'Cardio': ['Treadmill', 'Stationary Bike', 'Rowing Machine'],
+        },
+    },
+    muscle: {
+        categories: {
+            'Legs': ['Squat', 'Leg Press', 'Leg Extension', 'Leg Curl', 'Lunges', 'Calf Raise', 'Hip Thrust'],
+            'Arms': ['Bicep Curl', 'Hammer Curl', 'Tricep Pushdown', 'Overhead Tricep Extension', 'Preacher Curl'],
+            'Chest': ['Bench Press', 'Incline Bench Press', 'Dumbbell Press', 'Chest Fly', 'Push-ups', 'Cable Crossover'],
+            'Back': ['Pull-ups', 'Lat Pulldown', 'Barbell Row', 'Seated Cable Row', 'Deadlift'],
+            'Shoulders': ['Overhead Press', 'Lateral Raise', 'Front Raise', 'Face Pulls', 'Shrugs'],
+            'Core': ['Plank', 'Crunches', 'Leg Raises', 'Russian Twists', 'Cable Crunch'],
+            'Cardio': ['Treadmill', 'Stationary Bike', 'Rowing Machine', 'Elliptical', 'Stair Climber'],
+        },
+    },
+};
+
+let setupSkipped = false;
+
+function resetSetupWizard() {
+    document.getElementById('setup-template-choice').classList.remove('hidden');
+    document.getElementById('setup-checklist-view').classList.add('hidden');
+}
+
+function renderSetupChecklist(templateKey) {
+    document.getElementById('setup-template-choice').classList.add('hidden');
+    document.getElementById('setup-checklist-view').classList.remove('hidden');
+
+    const template = SETUP_TEMPLATES[templateKey];
+    document.getElementById('setup-checklist-list').innerHTML = Object.entries(template.categories).map(([cat, list]) => `
+        <div class="setup-category-group">
+            <h3>${escapeHtml(cat)}</h3>
+            ${list.map(name => `
+                <label class="setup-checkbox-row">
+                    <input type="checkbox" checked data-cat="${escapeHtml(cat)}" data-name="${escapeHtml(name)}">
+                    ${escapeHtml(name)}
+                </label>
+            `).join('')}
+        </div>
+    `).join('');
+}
+
+function confirmSetupWizard() {
+    const checked = [...document.querySelectorAll('#setup-checklist-list input:checked')];
+    if (checked.length === 0) {
+        alert("Select at least one exercise, or use \"Skip\" to set up manually.");
+        return;
+    }
+
+    const categoriesToAdd = [...new Set(checked.map(cb => cb.dataset.cat))];
+    const exercisesToAdd = checked.map(cb => ({
+        id: `${slugify(cb.dataset.cat)}__${slugify(cb.dataset.name)}`,
+        name: cb.dataset.name,
+        category: cb.dataset.cat,
+    }));
+
+    saveCategories(categoriesToAdd);
+    saveExercises(exercisesToAdd);
+
+    renderCategoryManager();
+    refreshCategoryDependents();
+}
+
+function initSetupWizard() {
+    document.querySelectorAll('.setup-template-btn').forEach(btn => {
+        btn.addEventListener('click', () => renderSetupChecklist(btn.dataset.template));
+    });
+    document.getElementById('setup-back-btn').addEventListener('click', resetSetupWizard);
+    document.getElementById('setup-skip-btn').addEventListener('click', () => {
+        setupSkipped = true;
+        renderCategoryManager();
+    });
+    document.getElementById('setup-confirm-btn').addEventListener('click', confirmSetupWizard);
 }
 
 // ============ BODY & NOTES TAB ============
@@ -1184,15 +1281,13 @@ function initBodyTab() {
         e.preventDefault();
         const date = document.getElementById('bw-date').value;
         const weight = parseFloat(document.getElementById('bw-weight').value);
-        const comment = document.getElementById('bw-comment').value.trim();
         if (!date || isNaN(weight)) { alert('Please enter a date and weight.'); return; }
 
         const entries = getBodyweight();
-        entries.push({ id: Date.now(), date, weight, comment: comment || null });
+        entries.push({ id: Date.now(), date, weight, comment: null });
         saveBodyweight(entries);
 
         document.getElementById('bw-weight').value = '';
-        document.getElementById('bw-comment').value = '';
         renderBodyweightList();
     });
 }

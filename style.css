@@ -105,6 +105,30 @@ header h1 {
     margin: 14px 0;
 }
 
+.setup-category-group {
+    margin-bottom: 18px;
+}
+
+.setup-category-group h3 {
+    margin: 0 0 6px 0;
+    color: var(--text);
+}
+
+.setup-checkbox-row {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 0;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.setup-checkbox-row input {
+    width: auto;
+    flex-shrink: 0;
+}
+
 .review-header-row {
     display: flex;
     justify-content: space-between;

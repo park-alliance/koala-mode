@@ -170,12 +170,30 @@
         <section id="tab-exercises" class="tab-panel">
             <h2>Exercise Manager</h2>
 
-            <div id="category-manager-list"></div>
+            <div id="setup-wizard" class="hidden">
+                <p class="card-sub">Pick a starting template to quickly set up your categories and exercises. Everything is pre-checked — uncheck anything you don't want, and you can always add, rename, or remove things later.</p>
 
-            <form id="add-category-form" class="inline-form">
-                <input type="text" id="new-category-name" placeholder="New category name (e.g. Push, Pull)">
-                <button type="submit" class="primary-btn">+ Add Category</button>
-            </form>
+                <div id="setup-template-choice">
+                    <button type="button" class="grid-btn setup-template-btn" data-template="ppl" style="display:block;width:100%;text-align:left;margin-bottom:10px;">Push / Pull / Legs / Core / Cardio</button>
+                    <button type="button" class="grid-btn setup-template-btn" data-template="muscle" style="display:block;width:100%;text-align:left;margin-bottom:10px;">Muscle Groups (Legs, Arms, Chest, Back, Shoulders, Core, Cardio)</button>
+                    <button type="button" class="link-btn" id="setup-skip-btn">Skip — I'll set up manually</button>
+                </div>
+
+                <div id="setup-checklist-view" class="hidden">
+                    <button class="back-btn" id="setup-back-btn">&larr; Choose a different template</button>
+                    <div id="setup-checklist-list"></div>
+                    <button type="button" class="primary-btn" id="setup-confirm-btn">Set Up My Exercises</button>
+                </div>
+            </div>
+
+            <div id="exercise-manager-normal">
+                <div id="category-manager-list"></div>
+
+                <form id="add-category-form" class="inline-form">
+                    <input type="text" id="new-category-name" placeholder="New category name (e.g. Push, Pull)">
+                    <button type="submit" class="primary-btn">+ Add Category</button>
+                </form>
+            </div>
         </section>
 
         <!-- PLAN WORKOUT TAB -->
@@ -210,9 +228,6 @@
                 </label>
                 <label>Weight (lb)
                     <input type="number" id="bw-weight" step="0.1" placeholder="180" required>
-                </label>
-                <label>Comment
-                    <input type="text" id="bw-comment" placeholder="optional">
                 </label>
                 <button type="submit" class="primary-btn">Log Weight</button>
             </form>
