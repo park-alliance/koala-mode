@@ -1,6 +1,6 @@
 {
-    "name": "Workout Tracker",
-    "short_name": "Workouts",
+    "name": "Koala Mode",
+    "short_name": "Koala Mode",
     "start_url": "./index.html",
     "scope": "./",
     "display": "standalone",
