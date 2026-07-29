@@ -1,4 +1,4 @@
-const CACHE_NAME = 'koala-mode-v5';
+const CACHE_NAME = 'koala-mode-v6';
 const CORE_FILES = [
     './',
     './index.html',
@@ -13,7 +13,11 @@ const CORE_FILES = [
 
 self.addEventListener('install', event => {
     event.waitUntil(
-        caches.open(CACHE_NAME).then(cache => cache.addAll(CORE_FILES))
+        caches.open(CACHE_NAME).then(cache =>
+            Promise.all(CORE_FILES.map(url =>
+                fetch(url, { cache: 'reload' }).then(response => cache.put(url, response))
+            ))
+        )
     );
     self.skipWaiting();
 });
@@ -30,7 +34,7 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
     if (event.request.method !== 'GET') return;
     event.respondWith(
-        fetch(event.request)
+        fetch(event.request, { cache: 'reload' })
             .then(response => {
                 if (response.ok) {
                     const copy = response.clone();
