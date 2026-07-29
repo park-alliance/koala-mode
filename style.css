@@ -105,6 +105,34 @@ header h1 {
     margin: 14px 0;
 }
 
+.review-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.review-header-row h2 {
+    margin: 0;
+}
+
+.gear-btn {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    width: 36px;
+    height: 36px;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#goals-panel {
+    margin-bottom: 16px;
+}
+
 .auth-error {
     background: var(--danger-tint);
     color: var(--danger);

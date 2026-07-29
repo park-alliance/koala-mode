@@ -272,17 +272,28 @@ function computeBodyweightTrendPoints() {
 // ============ SHARED EXERCISE PICKER ============
 // Used by the plan editor ("add exercise") and the active-session swap/add controls.
 
+const pickerOpenCategories = {}; // containerId -> Set of category names currently expanded
+
 function renderExercisePickerButtons(containerId, excludeIds, onPick) {
     const container = document.getElementById(containerId);
     const categories = getCategories();
     const exercises = getExercises();
 
+    // Default to "all expanded" the first time a given picker is used, but
+    // remember what the user collapses across re-renders (e.g. after adding
+    // an exercise, which rebuilds this list to exclude the new pick).
+    if (!pickerOpenCategories[containerId]) {
+        pickerOpenCategories[containerId] = new Set(categories);
+    }
+    const openSet = pickerOpenCategories[containerId];
+
     let html = '';
     categories.forEach(cat => {
         const list = exercises.filter(e => e.category === cat && !excludeIds.includes(e.id));
         if (list.length === 0) return;
+        const isOpen = openSet.has(cat);
         html += `<div class="category-header" data-cat="${escapeHtml(cat)}"><span class="category-header-title">${escapeHtml(cat)}</span></div>`;
-        html += `<div class="category-body open">`;
+        html += `<div class="category-body${isOpen ? ' open' : ''}">`;
         list.forEach(ex => {
             html += `<div class="exercise-row"><button type="button" class="picker-ex-btn" data-id="${ex.id}" style="border:none;background:none;cursor:pointer;text-align:left;padding:6px 0;font-size:14px;">+ ${escapeHtml(ex.name)}</button></div>`;
         });
@@ -292,7 +303,12 @@ function renderExercisePickerButtons(containerId, excludeIds, onPick) {
     container.innerHTML = html || '<p class="no-data">No more exercises available.</p>';
 
     container.querySelectorAll('.category-header').forEach(header => {
-        header.addEventListener('click', () => header.nextElementSibling.classList.toggle('open'));
+        header.addEventListener('click', () => {
+            const cat = header.dataset.cat;
+            if (openSet.has(cat)) openSet.delete(cat);
+            else openSet.add(cat);
+            renderExercisePickerButtons(containerId, excludeIds, onPick);
+        });
     });
     container.querySelectorAll('.picker-ex-btn').forEach(btn => {
         btn.addEventListener('click', () => onPick(btn.dataset.id));
@@ -1345,12 +1361,17 @@ function renderGoalsForm() {
 }
 
 function initGoalsForm() {
+    document.getElementById('goals-gear-btn').addEventListener('click', () => {
+        document.getElementById('goals-panel').classList.toggle('hidden');
+    });
+
     document.getElementById('goals-form').addEventListener('submit', e => {
         e.preventDefault();
         const calorieGoal = parseFloat(document.getElementById('goal-calories').value) || null;
         const proteinGoal = parseFloat(document.getElementById('goal-protein').value) || null;
         saveGoals({ calorieGoal, proteinGoal });
         renderGoalsForm();
+        document.getElementById('goals-panel').classList.add('hidden');
     });
 }
 

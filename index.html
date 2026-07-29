@@ -226,19 +226,24 @@
 
         <!-- DAILY REVIEW TAB -->
         <section id="tab-review" class="tab-panel">
-            <h2>Goals</h2>
-            <form id="goals-form" class="form-row-3">
-                <label>Daily Calorie Goal
-                    <input type="number" id="goal-calories" step="1" placeholder="2200">
-                </label>
-                <label>Daily Protein Goal (g)
-                    <input type="number" id="goal-protein" step="1" placeholder="180">
-                </label>
-                <button type="submit" class="primary-btn">Save Goals</button>
-            </form>
-            <p class="card-sub" id="goals-current-display"></p>
+            <div class="review-header-row">
+                <h2>End of Day Review</h2>
+                <button type="button" class="gear-btn" id="goals-gear-btn" aria-label="Goal settings" title="Goal settings">⚙️</button>
+            </div>
 
-            <h2>End of Day Review</h2>
+            <div id="goals-panel" class="hidden">
+                <form id="goals-form" class="form-row-3">
+                    <label>Daily Calorie Goal
+                        <input type="number" id="goal-calories" step="1" placeholder="2200">
+                    </label>
+                    <label>Daily Protein Goal (g)
+                        <input type="number" id="goal-protein" step="1" placeholder="180">
+                    </label>
+                    <button type="submit" class="primary-btn">Save Goals</button>
+                </form>
+                <p class="card-sub" id="goals-current-display"></p>
+            </div>
+
             <form id="review-form">
                 <div class="form-row">
                     <label>Date
