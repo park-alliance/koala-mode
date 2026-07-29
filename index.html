@@ -44,6 +44,7 @@
     <div id="app-shell" class="hidden">
     <div id="app-top">
         <header>
+            <img src="icon-192.png" alt="" class="header-icon">
             <button type="button" class="link-btn" id="sign-out-btn">Sign Out</button>
         </header>
 
@@ -59,6 +60,12 @@
     <main>
         <!-- LOG TAB -->
         <section id="tab-log" class="tab-panel active">
+            <div id="rest-timer">
+                <input type="text" id="rest-timer-display" value="2:00" inputmode="numeric">
+                <button type="button" class="small-btn" id="rest-timer-toggle">Start</button>
+                <button type="button" class="small-btn" id="rest-timer-reset" title="Reset">&#8635;</button>
+            </div>
+
             <div id="log-start-row">
                 <button class="primary-btn" id="start-planned-btn">&#9654; Start Planned Workout</button>
             </div>
@@ -77,13 +84,9 @@
                     <input type="date" id="session-date" class="date-compact">
                 </div>
                 <div id="log-session-strip" class="session-strip"></div>
+                <button type="button" class="link-btn" id="session-add-btn">+ Add exercise</button>
                 <div id="session-finish-row" class="hidden">
                     <button type="button" class="primary-btn" id="session-finish-btn">Finish Workout</button>
-                </div>
-                <div class="session-actions">
-                    <button type="button" class="small-btn" id="session-swap-btn">Swap exercise</button>
-                    <button type="button" class="small-btn" id="session-add-btn">+ Add exercise</button>
-                    <button type="button" class="small-btn danger-btn" id="session-remove-btn">Remove from session</button>
                 </div>
                 <div id="session-picker-panel" class="hidden">
                     <button class="back-btn" id="session-picker-back">&larr; Back</button>
@@ -188,8 +191,9 @@
 
                 <div id="setup-checklist-view" class="hidden">
                     <button class="back-btn" id="setup-back-btn">&larr; Choose a different template</button>
+                    <button type="button" class="primary-btn setup-confirm-btn" id="setup-confirm-btn-top">Set Up My Exercises</button>
                     <div id="setup-checklist-list"></div>
-                    <button type="button" class="primary-btn" id="setup-confirm-btn">Set Up My Exercises</button>
+                    <button type="button" class="primary-btn setup-confirm-btn" id="setup-confirm-btn">Set Up My Exercises</button>
                 </div>
             </div>
 
@@ -288,11 +292,13 @@
             </form>
 
             <p class="card-sub" id="review-stats"></p>
-            <div class="view-toggle" id="review-view-toggle">
-                <button type="button" class="bg-option selected" data-view="list">List</button>
-                <button type="button" class="bg-option" data-view="grid">Grid</button>
+            <div class="review-view-row">
+                <div class="view-toggle" id="review-view-toggle">
+                    <button type="button" class="bg-option selected" data-view="list">List</button>
+                    <button type="button" class="bg-option" data-view="grid">Grid</button>
+                </div>
+                <label class="show-comments-toggle"><input type="checkbox" id="review-show-comments"> Show comments</label>
             </div>
-            <label class="show-comments-toggle"><input type="checkbox" id="review-show-comments"> Show comments</label>
             <div id="review-list"></div>
             <div id="review-grid" class="hidden"></div>
         </section>

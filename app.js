@@ -701,6 +701,7 @@ function startSessionFromPlan(planId) {
 }
 
 function enterSessionMode() {
+    openSessionRowMenuIdx = null;
     document.getElementById('log-start-row').classList.add('hidden');
     document.getElementById('log-plan-picker').classList.add('hidden');
     document.getElementById('log-step-category').classList.add('hidden');
@@ -727,6 +728,10 @@ function exitSessionMode() {
     document.getElementById('log-step-category').classList.remove('hidden');
 }
 
+const SESSION_GEAR_ICON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
+
+let openSessionRowMenuIdx = null;
+
 function renderSessionStrip() {
     const container = document.getElementById('log-session-strip');
     const exercises = getExercises();
@@ -736,11 +741,18 @@ function renderSessionStrip() {
         const isCurrent = idx === activeSession.currentIndex;
         const isDone = !!activeSession.completed[idx];
         const rowCls = `session-pill-row${isCurrent ? ' current' : ''}${isDone ? ' completed' : ''}`;
+        const menuOpen = openSessionRowMenuIdx === idx;
         return `
         <div class="${rowCls}">
             <input type="checkbox" class="session-complete-cb" data-idx="${idx}" ${isDone ? 'checked' : ''}>
             <button type="button" class="session-pill-name" data-idx="${idx}">${escapeHtml(name)}</button>
-        </div>`;
+            <button type="button" class="session-row-gear" data-idx="${idx}" title="Exercise options" aria-label="Exercise options">${SESSION_GEAR_ICON}</button>
+        </div>
+        ${menuOpen ? `
+        <div class="session-row-menu">
+            <button type="button" class="link-btn session-row-swap" data-idx="${idx}">Swap</button>
+            <button type="button" class="link-btn danger-text session-row-remove" data-idx="${idx}">Remove</button>
+        </div>` : ''}`;
     }).join('');
 
     container.querySelectorAll('.session-pill-name').forEach(btn => {
@@ -752,6 +764,27 @@ function renderSessionStrip() {
             activeSession.completed[idx] = cb.checked;
             saveActiveSession(activeSession);
             renderSessionStrip();
+        });
+    });
+    container.querySelectorAll('.session-row-gear').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const idx = parseInt(btn.dataset.idx, 10);
+            openSessionRowMenuIdx = openSessionRowMenuIdx === idx ? null : idx;
+            renderSessionStrip();
+        });
+    });
+    container.querySelectorAll('.session-row-swap').forEach(btn => {
+        btn.addEventListener('click', () => {
+            openSessionRowMenuIdx = null;
+            jumpToSessionIndex(parseInt(btn.dataset.idx, 10));
+            openSessionPicker('swap');
+        });
+    });
+    container.querySelectorAll('.session-row-remove').forEach(btn => {
+        btn.addEventListener('click', () => {
+            openSessionRowMenuIdx = null;
+            jumpToSessionIndex(parseInt(btn.dataset.idx, 10));
+            removeCurrentFromSession();
         });
     });
 
@@ -832,9 +865,7 @@ function initSessionControls() {
         document.getElementById('cardio-date').value = activeSession.date;
     });
 
-    document.getElementById('session-swap-btn').addEventListener('click', () => openSessionPicker('swap'));
     document.getElementById('session-add-btn').addEventListener('click', () => openSessionPicker('add'));
-    document.getElementById('session-remove-btn').addEventListener('click', removeCurrentFromSession);
     document.getElementById('session-picker-back').addEventListener('click', () => {
         document.getElementById('session-picker-panel').classList.add('hidden');
     });
@@ -1282,6 +1313,14 @@ function resetSetupWizard() {
     document.getElementById('setup-checklist-view').classList.add('hidden');
 }
 
+function setupCheckboxRowHtml(cat, name) {
+    return `
+        <label class="setup-checkbox-row">
+            <input type="checkbox" checked data-cat="${escapeHtml(cat)}" data-name="${escapeHtml(name)}">
+            ${escapeHtml(name)}
+        </label>`;
+}
+
 function renderSetupChecklist(templateKey) {
     document.getElementById('setup-template-choice').classList.add('hidden');
     document.getElementById('setup-checklist-view').classList.remove('hidden');
@@ -1293,34 +1332,65 @@ function renderSetupChecklist(templateKey) {
                 <input type="checkbox" checked class="setup-cat-toggle" data-cat="${escapeHtml(cat)}">
                 <h3>${escapeHtml(cat)}</h3>
             </label>
-            ${list.map(name => `
-                <label class="setup-checkbox-row">
-                    <input type="checkbox" checked data-cat="${escapeHtml(cat)}" data-name="${escapeHtml(name)}">
-                    ${escapeHtml(name)}
-                </label>
-            `).join('')}
+            <div class="setup-exercise-list" data-cat-list="${escapeHtml(cat)}">
+                ${list.map(name => setupCheckboxRowHtml(cat, name)).join('')}
+            </div>
+            <div class="setup-add-custom">
+                <input type="text" class="setup-custom-input" data-cat="${escapeHtml(cat)}" placeholder="Add your own exercise">
+                <button type="button" class="small-btn setup-custom-add-btn" data-cat="${escapeHtml(cat)}">+ Add</button>
+            </div>
         </div>
     `).join('');
+}
 
-    document.querySelectorAll('.setup-cat-toggle').forEach(catCb => {
-        catCb.addEventListener('change', () => {
-            document.querySelectorAll(`#setup-checklist-list input[data-cat="${CSS.escape(catCb.dataset.cat)}"][data-name]`)
-                .forEach(cb => { cb.checked = catCb.checked; });
-        });
+function syncSetupCategoryToggle(cat) {
+    const catCb = document.querySelector(`.setup-cat-toggle[data-cat="${CSS.escape(cat)}"]`);
+    if (!catCb) return;
+    const siblings = [...document.querySelectorAll(`#setup-checklist-list input[data-cat="${CSS.escape(cat)}"][data-name]`)];
+    if (siblings.length === 0) { catCb.checked = true; catCb.indeterminate = false; return; }
+    catCb.checked = siblings.every(s => s.checked);
+    catCb.indeterminate = !catCb.checked && siblings.some(s => s.checked);
+}
+
+function addCustomSetupExercise(cat, name) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const list = document.querySelector(`.setup-exercise-list[data-cat-list="${CSS.escape(cat)}"]`);
+    if (!list) return;
+    list.insertAdjacentHTML('beforeend', setupCheckboxRowHtml(cat, trimmed));
+    syncSetupCategoryToggle(cat);
+}
+
+function initSetupChecklistDelegation() {
+    const container = document.getElementById('setup-checklist-list');
+    container.addEventListener('change', e => {
+        if (e.target.classList.contains('setup-cat-toggle')) {
+            const cat = e.target.dataset.cat;
+            document.querySelectorAll(`#setup-checklist-list input[data-cat="${CSS.escape(cat)}"][data-name]`)
+                .forEach(cb => { cb.checked = e.target.checked; });
+        } else if (e.target.matches('input[data-name]')) {
+            syncSetupCategoryToggle(e.target.dataset.cat);
+        }
     });
-
-    document.querySelectorAll('#setup-checklist-list input[data-name]').forEach(cb => {
-        cb.addEventListener('change', () => {
-            const catCb = document.querySelector(`.setup-cat-toggle[data-cat="${CSS.escape(cb.dataset.cat)}"]`);
-            const siblings = [...document.querySelectorAll(`#setup-checklist-list input[data-cat="${CSS.escape(cb.dataset.cat)}"][data-name]`)];
-            catCb.checked = siblings.every(s => s.checked);
-            catCb.indeterminate = !catCb.checked && siblings.some(s => s.checked);
-        });
+    container.addEventListener('click', e => {
+        const btn = e.target.closest('.setup-custom-add-btn');
+        if (!btn) return;
+        const input = container.querySelector(`.setup-custom-input[data-cat="${CSS.escape(btn.dataset.cat)}"]`);
+        addCustomSetupExercise(btn.dataset.cat, input.value);
+        input.value = '';
+        input.focus();
+    });
+    container.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && e.target.classList.contains('setup-custom-input')) {
+            e.preventDefault();
+            addCustomSetupExercise(e.target.dataset.cat, e.target.value);
+            e.target.value = '';
+        }
     });
 }
 
 function confirmSetupWizard() {
-    const checked = [...document.querySelectorAll('#setup-checklist-list input:checked')];
+    const checked = [...document.querySelectorAll('#setup-checklist-list input[data-name]:checked')];
     if (checked.length === 0) {
         alert("Select at least one exercise, or use \"Skip\" to set up manually.");
         return;
@@ -1349,7 +1419,8 @@ function initSetupWizard() {
         setupSkipped = true;
         renderCategoryManager();
     });
-    document.getElementById('setup-confirm-btn').addEventListener('click', confirmSetupWizard);
+    document.querySelectorAll('.setup-confirm-btn').forEach(btn => btn.addEventListener('click', confirmSetupWizard));
+    initSetupChecklistDelegation();
 }
 
 // ============ BODY & NOTES TAB ============
@@ -1845,6 +1916,89 @@ function initAuthUI() {
     document.getElementById('sign-out-btn').addEventListener('click', () => auth.signOut());
 }
 
+// ============ REST TIMER ============
+
+let restTimerDefault = 120;
+let restTimerRemaining = restTimerDefault;
+let restTimerInterval = null;
+
+function formatRestTimer(seconds) {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+}
+
+function parseRestTimerInput(text) {
+    const trimmed = text.trim();
+    if (!trimmed) return null;
+    if (trimmed.includes(':')) {
+        const [m, s] = trimmed.split(':').map(Number);
+        if (Number.isNaN(m) || Number.isNaN(s)) return null;
+        return Math.max(0, Math.round(m * 60 + s));
+    }
+    const n = Number(trimmed);
+    if (Number.isNaN(n)) return null;
+    return Math.max(0, Math.round(n * 60));
+}
+
+function updateRestTimerDisplay() {
+    const input = document.getElementById('rest-timer-display');
+    input.value = formatRestTimer(restTimerRemaining);
+    input.readOnly = !!restTimerInterval;
+    document.getElementById('rest-timer').classList.toggle('done', restTimerRemaining === 0 && !restTimerInterval);
+}
+
+function startRestTimer() {
+    if (restTimerRemaining <= 0) restTimerRemaining = restTimerDefault;
+    document.getElementById('rest-timer-toggle').textContent = 'Pause';
+    restTimerInterval = setInterval(() => {
+        restTimerRemaining--;
+        updateRestTimerDisplay();
+        if (restTimerRemaining <= 0) pauseRestTimer();
+    }, 1000);
+    updateRestTimerDisplay();
+}
+
+function pauseRestTimer() {
+    clearInterval(restTimerInterval);
+    restTimerInterval = null;
+    document.getElementById('rest-timer-toggle').textContent = 'Start';
+    updateRestTimerDisplay();
+}
+
+function resetRestTimer() {
+    clearInterval(restTimerInterval);
+    restTimerInterval = null;
+    restTimerRemaining = restTimerDefault;
+    document.getElementById('rest-timer-toggle').textContent = 'Start';
+    updateRestTimerDisplay();
+}
+
+function applyRestTimerEdit() {
+    const input = document.getElementById('rest-timer-display');
+    const parsed = parseRestTimerInput(input.value);
+    if (parsed !== null && parsed > 0) {
+        restTimerDefault = parsed;
+        restTimerRemaining = parsed;
+    }
+    updateRestTimerDisplay();
+}
+
+function initRestTimer() {
+    updateRestTimerDisplay();
+    const input = document.getElementById('rest-timer-display');
+    input.addEventListener('focus', () => input.select());
+    input.addEventListener('blur', applyRestTimerEdit);
+    input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') input.blur();
+    });
+    document.getElementById('rest-timer-toggle').addEventListener('click', () => {
+        if (restTimerInterval) pauseRestTimer();
+        else startRestTimer();
+    });
+    document.getElementById('rest-timer-reset').addEventListener('click', resetRestTimer);
+}
+
 // ============ INIT ============
 
 function renderEverything() {
@@ -1859,6 +2013,7 @@ function renderEverything() {
 
 document.addEventListener('DOMContentLoaded', () => {
     initTabs();
+    initRestTimer();
     initLogTab();
     initCardioForm();
     initSessionControls();
