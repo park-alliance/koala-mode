@@ -1245,14 +1245,18 @@ const SETUP_TEMPLATES = {
         categories: {
             'Push': ['Bench Press', 'Overhead Press', 'Incline Dumbbell Press', 'Chest Fly', 'Tricep Pushdown', 'Lateral Raise'],
             'Pull': ['Pull-ups', 'Barbell Row', 'Lat Pulldown', 'Deadlift', 'Bicep Curl', 'Face Pulls'],
-            'Legs': ['Squat', 'Leg Press', 'Lunges', 'Leg Curl', 'Calf Raise', 'Hip Thrust'],
+            'Legs': ['Squat', 'Leg Press', 'Lunges'],
+            'Legs (Anterior)': ['Leg Extension', 'Bulgarian Split Squat'],
+            'Legs (Posterior)': ['Leg Curl', 'Hip Thrust', 'Single Leg RDL', 'Single Leg Cable Kickback', 'Calf Raise'],
             'Core': ['Plank', 'Crunches', 'Leg Raises', 'Russian Twists'],
             'Cardio': ['Treadmill', 'Stationary Bike', 'Rowing Machine'],
         },
     },
     muscle: {
         categories: {
-            'Legs': ['Squat', 'Leg Press', 'Leg Extension', 'Leg Curl', 'Lunges', 'Calf Raise', 'Hip Thrust'],
+            'Legs': ['Squat', 'Leg Press', 'Lunges'],
+            'Legs (Anterior)': ['Leg Extension', 'Bulgarian Split Squat'],
+            'Legs (Posterior)': ['Leg Curl', 'Hip Thrust', 'Single Leg RDL', 'Single Leg Cable Kickback', 'Calf Raise'],
             'Arms': ['Bicep Curl', 'Hammer Curl', 'Tricep Pushdown', 'Overhead Tricep Extension', 'Preacher Curl'],
             'Chest': ['Bench Press', 'Incline Bench Press', 'Dumbbell Press', 'Chest Fly', 'Push-ups', 'Cable Crossover'],
             'Back': ['Pull-ups', 'Lat Pulldown', 'Barbell Row', 'Seated Cable Row', 'Deadlift'],
@@ -1277,7 +1281,10 @@ function renderSetupChecklist(templateKey) {
     const template = SETUP_TEMPLATES[templateKey];
     document.getElementById('setup-checklist-list').innerHTML = Object.entries(template.categories).map(([cat, list]) => `
         <div class="setup-category-group">
-            <h3>${escapeHtml(cat)}</h3>
+            <label class="setup-checkbox-row setup-category-toggle-row">
+                <input type="checkbox" checked class="setup-cat-toggle" data-cat="${escapeHtml(cat)}">
+                <h3>${escapeHtml(cat)}</h3>
+            </label>
             ${list.map(name => `
                 <label class="setup-checkbox-row">
                     <input type="checkbox" checked data-cat="${escapeHtml(cat)}" data-name="${escapeHtml(name)}">
@@ -1286,6 +1293,22 @@ function renderSetupChecklist(templateKey) {
             `).join('')}
         </div>
     `).join('');
+
+    document.querySelectorAll('.setup-cat-toggle').forEach(catCb => {
+        catCb.addEventListener('change', () => {
+            document.querySelectorAll(`#setup-checklist-list input[data-cat="${CSS.escape(catCb.dataset.cat)}"][data-name]`)
+                .forEach(cb => { cb.checked = catCb.checked; });
+        });
+    });
+
+    document.querySelectorAll('#setup-checklist-list input[data-name]').forEach(cb => {
+        cb.addEventListener('change', () => {
+            const catCb = document.querySelector(`.setup-cat-toggle[data-cat="${CSS.escape(cb.dataset.cat)}"]`);
+            const siblings = [...document.querySelectorAll(`#setup-checklist-list input[data-cat="${CSS.escape(cb.dataset.cat)}"][data-name]`)];
+            catCb.checked = siblings.every(s => s.checked);
+            catCb.indeterminate = !catCb.checked && siblings.some(s => s.checked);
+        });
+    });
 }
 
 function confirmSetupWizard() {
@@ -1769,7 +1792,6 @@ function showAuthScreen() {
 function showApp(user) {
     document.getElementById('auth-screen').classList.add('hidden');
     document.getElementById('app-shell').classList.remove('hidden');
-    document.getElementById('user-email').textContent = user.email;
 }
 
 let authMode = 'signin';
