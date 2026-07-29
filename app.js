@@ -1240,29 +1240,34 @@ function initExercisesTab() {
 // static and shared by everyone - it costs nothing per-user, since it's
 // never written to Firestore.
 
+const SHARED_SETUP_LEGS = {
+    'Legs': ['Squat', 'Leg Press', 'Lunges'],
+    'Legs (Anterior)': ['Hack Squat', 'Incline Hack Squat', 'Decline Hack Squat', 'Quad Extension Machine', 'Bulgarian Split Squat'],
+    'Legs (Posterior)': ['Hamstring Machine', 'Hip Thrust', 'Single Leg RDL', 'Single Leg Cable Kickback', 'Calf Raise'],
+};
+
+const SHARED_SETUP_CORE_CARDIO = {
+    'Core': ['Crunches', 'Leg Raises (Flat)', 'Leg Raises (Hanging)', 'Cable Crunch'],
+    'Cardio': ['Run', 'Walk', 'Rowing Machine', 'Elliptical', 'Stairmaster', 'Assault Bike', 'Swimming', 'Jiu-Jitsu'],
+};
+
 const SETUP_TEMPLATES = {
     ppl: {
         categories: {
-            'Push': ['Bench Press', 'Overhead Press', 'Incline Dumbbell Press', 'Chest Fly', 'Tricep Pushdown', 'Lateral Raise'],
+            'Push': ['Bench Press', 'Overhead Press', 'Incline Bench Press', 'Chest Fly', 'Tricep Pushdown', 'Lateral Raise'],
             'Pull': ['Pull-ups', 'Barbell Row', 'Lat Pulldown', 'Deadlift', 'Bicep Curl', 'Face Pulls'],
-            'Legs': ['Squat', 'Leg Press', 'Lunges'],
-            'Legs (Anterior)': ['Leg Extension', 'Bulgarian Split Squat'],
-            'Legs (Posterior)': ['Leg Curl', 'Hip Thrust', 'Single Leg RDL', 'Single Leg Cable Kickback', 'Calf Raise'],
-            'Core': ['Plank', 'Crunches', 'Leg Raises', 'Russian Twists'],
-            'Cardio': ['Treadmill', 'Stationary Bike', 'Rowing Machine'],
+            ...SHARED_SETUP_LEGS,
+            ...SHARED_SETUP_CORE_CARDIO,
         },
     },
     muscle: {
         categories: {
-            'Legs': ['Squat', 'Leg Press', 'Lunges'],
-            'Legs (Anterior)': ['Leg Extension', 'Bulgarian Split Squat'],
-            'Legs (Posterior)': ['Leg Curl', 'Hip Thrust', 'Single Leg RDL', 'Single Leg Cable Kickback', 'Calf Raise'],
+            ...SHARED_SETUP_LEGS,
             'Arms': ['Bicep Curl', 'Hammer Curl', 'Tricep Pushdown', 'Overhead Tricep Extension', 'Preacher Curl'],
             'Chest': ['Bench Press', 'Incline Bench Press', 'Dumbbell Press', 'Chest Fly', 'Push-ups', 'Cable Crossover'],
             'Back': ['Pull-ups', 'Lat Pulldown', 'Barbell Row', 'Seated Cable Row', 'Deadlift'],
             'Shoulders': ['Overhead Press', 'Lateral Raise', 'Front Raise', 'Face Pulls', 'Shrugs'],
-            'Core': ['Plank', 'Crunches', 'Leg Raises', 'Russian Twists', 'Cable Crunch'],
-            'Cardio': ['Treadmill', 'Stationary Bike', 'Rowing Machine', 'Elliptical', 'Stair Climber'],
+            ...SHARED_SETUP_CORE_CARDIO,
         },
     },
 };
