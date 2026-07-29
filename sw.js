@@ -1,4 +1,4 @@
-const CACHE_NAME = 'koala-mode-v2';
+const CACHE_NAME = 'koala-mode-v3';
 const CORE_FILES = [
     './',
     './index.html',
