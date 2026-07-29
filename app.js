@@ -1240,22 +1240,25 @@ function initExercisesTab() {
 // static and shared by everyone - it costs nothing per-user, since it's
 // never written to Firestore.
 
+const SHARED_SETUP_LEGS_ANTERIOR = ['Hack Squat', 'Incline Hack Squat', 'Decline Hack Squat', 'Quad Extension Machine', 'Bulgarian Split Squat'];
+const SHARED_SETUP_LEGS_POSTERIOR = ['Hamstring Machine', 'Hip Thrust', 'Single Leg RDL', 'Single Leg Cable Kickback', 'Calf Raise'];
+
 const SHARED_SETUP_LEGS = {
-    'Legs': ['Squat', 'Leg Press', 'Lunges'],
-    'Legs (Anterior)': ['Hack Squat', 'Incline Hack Squat', 'Decline Hack Squat', 'Quad Extension Machine', 'Bulgarian Split Squat'],
-    'Legs (Posterior)': ['Hamstring Machine', 'Hip Thrust', 'Single Leg RDL', 'Single Leg Cable Kickback', 'Calf Raise'],
+    'Legs': ['Squat', 'Deadlift', 'Leg Press', 'Lunges', ...SHARED_SETUP_LEGS_ANTERIOR, ...SHARED_SETUP_LEGS_POSTERIOR],
+    'Legs (Anterior)': SHARED_SETUP_LEGS_ANTERIOR,
+    'Legs (Posterior)': SHARED_SETUP_LEGS_POSTERIOR,
 };
 
 const SHARED_SETUP_CORE_CARDIO = {
     'Core': ['Crunches', 'Leg Raises (Flat)', 'Leg Raises (Hanging)', 'Cable Crunch'],
-    'Cardio': ['Run', 'Walk', 'Rowing Machine', 'Elliptical', 'Stairmaster', 'Assault Bike', 'Swimming', 'Jiu-Jitsu'],
+    'Cardio': ['Run', 'Walk', 'Rowing Machine', 'Stairmaster', 'Assault Bike', 'Swimming', 'Jiu-Jitsu'],
 };
 
 const SETUP_TEMPLATES = {
     ppl: {
         categories: {
-            'Push': ['Bench Press', 'Overhead Press', 'Incline Bench Press', 'Chest Fly', 'Tricep Pushdown', 'Lateral Raise'],
-            'Pull': ['Pull-ups', 'Barbell Row', 'Lat Pulldown', 'Deadlift', 'Bicep Curl', 'Face Pulls'],
+            'Push': ['Bench Press', 'Overhead Press', 'Incline Bench Press', 'Dumbbell Press', 'Chest Fly', 'Push-ups', 'Cable Crossover', 'Tricep Pushdown', 'Overhead Tricep Extension', 'Lateral Raise', 'Front Raise'],
+            'Pull': ['Pull-ups', 'Barbell Row', 'Lat Pulldown', 'Seated Cable Row', 'Deadlift', 'Bicep Curl', 'Hammer Curl', 'Preacher Curl', 'Face Pulls', 'Shrugs'],
             ...SHARED_SETUP_LEGS,
             ...SHARED_SETUP_CORE_CARDIO,
         },
