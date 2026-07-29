@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>Workout Tracker</title>
+    <link rel="stylesheet" href="style.css">
+
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6c5ce7">
+    <link rel="icon" type="image/png" href="icon-192.png">
+
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Workouts">
+    <link rel="apple-touch-icon" href="icon-192.png">
+</head>
+<body>
+    <header>
+        <h1>Workout Tracker</h1>
+    </header>
+
+    <nav id="tab-nav">
+        <button class="tab-btn active" data-tab="log">Log</button>
+        <button class="tab-btn" data-tab="exercises">Exercises</button>
+        <button class="tab-btn" data-tab="plan">Plan Workout</button>
+        <button class="tab-btn" data-tab="body">Weight</button>
+        <button class="tab-btn" data-tab="review">Daily Review</button>
+    </nav>
+
+    <main>
+        <!-- LOG TAB -->
+        <section id="tab-log" class="tab-panel active">
+            <div id="log-start-row">
+                <button class="primary-btn" id="start-planned-btn">&#9654; Start Planned Workout</button>
+            </div>
+
+            <div id="log-plan-picker" class="hidden">
+                <button class="back-btn" id="log-plan-picker-back">&larr; Cancel</button>
+                <h2>Choose a plan</h2>
+                <div id="log-plan-picker-list"></div>
+            </div>
+
+            <div id="log-session-view" class="hidden">
+                <button class="back-btn" id="log-session-exit">&larr; Exit planned workout</button>
+                <h2 id="log-session-title"></h2>
+                <div class="session-nav">
+                    <span id="session-position"></span>
+                </div>
+                <div id="log-session-strip" class="session-strip"></div>
+                <div class="session-actions">
+                    <button type="button" class="small-btn" id="session-swap-btn">Swap exercise</button>
+                    <button type="button" class="small-btn" id="session-add-btn">+ Add exercise</button>
+                    <button type="button" class="small-btn danger-btn" id="session-remove-btn">Remove from session</button>
+                </div>
+                <div id="session-picker-panel" class="hidden">
+                    <button class="back-btn" id="session-picker-back">&larr; Back</button>
+                    <div id="session-picker-list"></div>
+                </div>
+            </div>
+
+            <div id="log-step-category">
+                <h2>Log Directly</h2>
+                <div id="log-category-list" class="button-grid"></div>
+            </div>
+
+            <div id="log-step-exercise" class="hidden">
+                <button class="back-btn" id="log-back-to-category">&larr; Categories</button>
+                <h2 id="log-exercise-category-title"></h2>
+                <div id="log-exercise-list" class="button-grid"></div>
+            </div>
+
+            <div id="log-step-detail" class="hidden">
+                <button class="back-btn" id="log-back-to-exercise">&larr; Change exercise</button>
+                <h2 id="log-detail-exercise-name"></h2>
+
+                <form id="log-set-form">
+                    <div class="form-row">
+                        <label>Date
+                            <input type="date" id="log-date" required>
+                        </label>
+                    </div>
+                    <div class="form-row form-row-3">
+                        <label>Weight (lb)
+                            <input type="number" id="log-weight" step="0.5" placeholder="135">
+                        </label>
+                        <label>Reps
+                            <input type="number" id="log-reps" step="1" placeholder="10">
+                        </label>
+                        <label>Set #
+                            <input type="number" id="log-set-number" step="1" min="1">
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <label>Comment
+                            <input type="text" id="log-comment" placeholder="optional">
+                        </label>
+                    </div>
+                    <button type="submit" class="primary-btn">Log Set</button>
+                </form>
+
+                <form id="log-cardio-form" class="hidden">
+                    <div class="form-row">
+                        <label>Date
+                            <input type="date" id="cardio-date" required>
+                        </label>
+                    </div>
+                    <div class="form-row form-row-3">
+                        <label>Total Time (min)
+                            <input type="number" id="cardio-total-time" step="0.5" placeholder="20">
+                        </label>
+                        <label>Distance (mi) — optional
+                            <input type="number" id="cardio-distance" step="0.01" placeholder="3.1">
+                        </label>
+                    </div>
+                    <div class="form-row" id="cardio-segments-row">
+                        <label>Zone(s) — one row for steady state, add more for intervals</label>
+                        <div id="cardio-segments-list"></div>
+                        <button type="button" class="small-btn" id="cardio-add-segment-btn">+ Add Segment</button>
+                    </div>
+                    <div class="form-row">
+                        <label>Comment
+                            <input type="text" id="cardio-comment" placeholder="optional">
+                        </label>
+                    </div>
+                    <button type="submit" class="primary-btn">Log Cardio</button>
+                </form>
+
+                <h3>History</h3>
+                <div class="view-toggle hidden" id="log-history-toggle">
+                    <button type="button" class="bg-option selected" data-view="list">List</button>
+                    <button type="button" class="bg-option" data-view="plot">Plot</button>
+                </div>
+                <div id="log-history-list"></div>
+                <div id="log-history-chart" class="hidden"></div>
+            </div>
+        </section>
+
+        <!-- EXERCISES TAB -->
+        <section id="tab-exercises" class="tab-panel">
+            <h2>Exercise Manager</h2>
+
+            <div id="category-manager-list"></div>
+
+            <form id="add-category-form" class="inline-form">
+                <input type="text" id="new-category-name" placeholder="New category name (e.g. Push, Pull)">
+                <button type="submit" class="primary-btn">+ Add Category</button>
+            </form>
+        </section>
+
+        <!-- PLAN WORKOUT TAB -->
+        <section id="tab-plan" class="tab-panel">
+            <div id="plan-list-view">
+                <h2>Workout Plans</h2>
+                <button type="button" class="primary-btn" id="new-plan-btn">+ New Plan</button>
+                <div id="plan-list"></div>
+            </div>
+
+            <div id="plan-editor" class="hidden">
+                <button class="back-btn" id="plan-editor-back">&larr; Plans</button>
+                <div class="form-row">
+                    <label>Plan name
+                        <input type="text" id="plan-name-input" placeholder="e.g. Push Day">
+                    </label>
+                </div>
+                <h3>Exercises in this plan</h3>
+                <div id="plan-editor-exercise-list"></div>
+                <button type="button" class="primary-btn" id="plan-save-btn">Save Plan</button>
+                <h3>Add exercise</h3>
+                <div id="plan-editor-picker"></div>
+            </div>
+        </section>
+
+        <!-- BODY & NOTES TAB -->
+        <section id="tab-body" class="tab-panel">
+            <h2>Weight</h2>
+            <form id="bodyweight-form" class="form-row form-row-3">
+                <label>Date
+                    <input type="date" id="bw-date" required>
+                </label>
+                <label>Weight (lb)
+                    <input type="number" id="bw-weight" step="0.1" placeholder="180" required>
+                </label>
+                <label>Comment
+                    <input type="text" id="bw-comment" placeholder="optional">
+                </label>
+                <button type="submit" class="primary-btn">Log Weight</button>
+            </form>
+            <div class="view-toggle hidden" id="bw-history-toggle">
+                <button type="button" class="bg-option selected" data-view="list">List</button>
+                <button type="button" class="bg-option" data-view="plot">Plot</button>
+            </div>
+            <div id="bodyweight-list"></div>
+            <div id="bodyweight-chart" class="hidden"></div>
+        </section>
+
+        <!-- DAILY REVIEW TAB -->
+        <section id="tab-review" class="tab-panel">
+            <h2>Goals</h2>
+            <form id="goals-form" class="form-row-3">
+                <label>Daily Calorie Goal
+                    <input type="number" id="goal-calories" step="1" placeholder="2200">
+                </label>
+                <label>Daily Protein Goal (g)
+                    <input type="number" id="goal-protein" step="1" placeholder="180">
+                </label>
+                <button type="submit" class="primary-btn">Save Goals</button>
+            </form>
+            <p class="card-sub" id="goals-current-display"></p>
+
+            <h2>End of Day Review</h2>
+            <form id="review-form">
+                <div class="form-row">
+                    <label>Date
+                        <input type="date" id="review-date" required>
+                    </label>
+                </div>
+                <div class="form-row">
+                    <label>Calories vs. goal</label>
+                    <div class="button-group" id="review-calories" data-options='["Below","At Goal","Above"]'></div>
+                </div>
+                <div class="form-row">
+                    <label>Protein vs. goal</label>
+                    <div class="button-group" id="review-protein" data-options='["Below","Met Goal"]'></div>
+                </div>
+                <div class="form-row">
+                    <label>Activity level</label>
+                    <div class="button-group" id="review-activity" data-options='["Not Active","Light","Moderate","High"]'></div>
+                </div>
+                <div class="form-row">
+                    <label>Did you work out?</label>
+                    <div class="button-group" id="review-workedout" data-options='["No","Yes"]'></div>
+                </div>
+                <div class="form-row hidden" id="review-quality-row">
+                    <label>Workout quality</label>
+                    <div class="button-group" id="review-quality" data-options='["Bad","Average","Good"]'></div>
+                </div>
+                <div class="form-row">
+                    <label>Note (optional)
+                        <input type="text" id="review-note" placeholder="How did today feel?">
+                    </label>
+                </div>
+                <button type="submit" class="primary-btn">Save Review</button>
+            </form>
+
+            <p class="card-sub" id="review-stats"></p>
+            <div class="view-toggle" id="review-view-toggle">
+                <button type="button" class="bg-option selected" data-view="list">List</button>
+                <button type="button" class="bg-option" data-view="grid">Grid</button>
+            </div>
+            <label class="show-comments-toggle"><input type="checkbox" id="review-show-comments"> Show comments</label>
+            <div id="review-list"></div>
+            <div id="review-grid" class="hidden"></div>
+        </section>
+    </main>
+
+    <script src="data-seed.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
