@@ -74,10 +74,14 @@
             <div id="log-session-view" class="hidden">
                 <button class="back-btn" id="log-session-exit">&larr; Exit planned workout</button>
                 <h2 id="log-session-title"></h2>
-                <div class="session-nav">
-                    <span id="session-position"></span>
+                <div class="date-row">
+                    <label for="session-date">Date</label>
+                    <input type="date" id="session-date" class="date-compact">
                 </div>
                 <div id="log-session-strip" class="session-strip"></div>
+                <div id="session-finish-row" class="hidden">
+                    <button type="button" class="primary-btn" id="session-finish-btn">Finish Workout</button>
+                </div>
                 <div class="session-actions">
                     <button type="button" class="small-btn" id="session-swap-btn">Swap exercise</button>
                     <button type="button" class="small-btn" id="session-add-btn">+ Add exercise</button>
@@ -105,7 +109,7 @@
                 <h2 id="log-detail-exercise-name"></h2>
 
                 <form id="log-set-form">
-                    <div class="date-row">
+                    <div class="date-row" id="log-date-row">
                         <label for="log-date">Date</label>
                         <input type="date" id="log-date" class="date-compact" required>
                     </div>
@@ -124,21 +128,19 @@
                             <button type="button" class="bg-option" data-set="2">2</button>
                             <button type="button" class="bg-option" data-set="3">3</button>
                             <button type="button" class="bg-option" data-set="4">4</button>
-                            <button type="button" class="bg-option" data-set="5">5</button>
-                            <button type="button" class="bg-option" data-set="6">6</button>
                             <button type="button" class="bg-option" id="log-set-edit-btn" title="Enter a different number">&#9998;</button>
                         </div>
                         <input type="number" id="log-set-number" step="1" min="1" inputmode="numeric" class="hidden">
                     </div>
-                    <div class="form-row">
+                    <input type="text" id="log-comment" placeholder="Comment (optional)" class="hidden">
+                    <div class="form-row log-submit-row">
                         <button type="button" class="link-btn" id="log-comment-toggle">+ Add comment</button>
-                        <input type="text" id="log-comment" placeholder="optional" class="hidden">
+                        <button type="submit" class="primary-btn">Log Set</button>
                     </div>
-                    <button type="submit" class="primary-btn">Log Set</button>
                 </form>
 
                 <form id="log-cardio-form" class="hidden">
-                    <div class="date-row">
+                    <div class="date-row" id="cardio-date-row">
                         <label for="cardio-date">Date</label>
                         <input type="date" id="cardio-date" class="date-compact" required>
                     </div>
@@ -146,12 +148,12 @@
                         <label>Total Time (min)
                             <input type="number" id="cardio-total-time" step="0.5" inputmode="decimal" placeholder="20">
                         </label>
-                        <label>Distance (mi) — optional
+                        <label>Distance (mi) - optional
                             <input type="number" id="cardio-distance" step="0.01" inputmode="decimal" placeholder="3.1">
                         </label>
                     </div>
                     <div class="form-row" id="cardio-segments-row">
-                        <label>Zone(s) — one row for steady state, add more for intervals</label>
+                        <label>Zone(s): one row for steady state, add more for intervals</label>
                         <div id="cardio-segments-list"></div>
                         <button type="button" class="small-btn" id="cardio-add-segment-btn">+ Add Segment</button>
                     </div>
@@ -178,12 +180,12 @@
             <h2>Exercise Manager</h2>
 
             <div id="setup-wizard" class="hidden">
-                <p class="card-sub">Pick a starting template to quickly set up your categories and exercises. Everything is pre-checked — uncheck anything you don't want, and you can always add, rename, or remove things later.</p>
+                <p class="card-sub">Pick a starting template to quickly set up your categories and exercises. Everything is pre-checked: uncheck anything you don't want, and you can always add, rename, or remove things later.</p>
 
                 <div id="setup-template-choice">
                     <button type="button" class="grid-btn setup-template-btn" data-template="ppl" style="display:block;width:100%;text-align:left;margin-bottom:10px;">Push / Pull / Legs / Core / Cardio</button>
                     <button type="button" class="grid-btn setup-template-btn" data-template="muscle" style="display:block;width:100%;text-align:left;margin-bottom:10px;">Muscle Groups (Legs, Arms, Chest, Back, Shoulders, Core, Cardio)</button>
-                    <button type="button" class="link-btn" id="setup-skip-btn">Skip — I'll set up manually</button>
+                    <button type="button" class="link-btn" id="setup-skip-btn">Skip, I'll set up manually</button>
                 </div>
 
                 <div id="setup-checklist-view" class="hidden">
@@ -255,6 +257,7 @@
             </div>
 
             <div id="goals-panel" class="hidden">
+                <h3>Goals</h3>
                 <form id="goals-form" class="form-row-3">
                     <label>Daily Calorie Goal
                         <input type="number" id="goal-calories" step="1" inputmode="numeric" placeholder="2200">
@@ -265,6 +268,11 @@
                     <button type="submit" class="primary-btn">Save Goals</button>
                 </form>
                 <p class="card-sub" id="goals-current-display"></p>
+
+                <h3>Review Questions</h3>
+                <p class="card-sub">Options are ordered worst to best - that order controls the grid's color coding.</p>
+                <div id="questions-manager-list"></div>
+                <button type="button" class="small-btn" id="add-question-btn">+ Add Question</button>
             </div>
 
             <form id="review-form">
@@ -272,26 +280,7 @@
                     <label for="review-date">Date</label>
                     <input type="date" id="review-date" class="date-compact" required>
                 </div>
-                <div class="form-row">
-                    <label>Calories vs. goal</label>
-                    <div class="button-group" id="review-calories" data-options='["Below","At Goal","Above"]'></div>
-                </div>
-                <div class="form-row">
-                    <label>Protein vs. goal</label>
-                    <div class="button-group" id="review-protein" data-options='["Below","Met Goal"]'></div>
-                </div>
-                <div class="form-row">
-                    <label>Activity level</label>
-                    <div class="button-group" id="review-activity" data-options='["Not Active","Light","Moderate","High"]'></div>
-                </div>
-                <div class="form-row">
-                    <label>Did you work out?</label>
-                    <div class="button-group" id="review-workedout" data-options='["No","Yes"]'></div>
-                </div>
-                <div class="form-row hidden" id="review-quality-row">
-                    <label>Workout quality</label>
-                    <div class="button-group" id="review-quality" data-options='["Bad","Average","Good"]'></div>
-                </div>
+                <div id="review-questions-fields"></div>
                 <div class="form-row">
                     <label>Note (optional)
                         <input type="text" id="review-note" placeholder="How did today feel?">

@@ -5,13 +5,20 @@
 // writes through to Firestore in the background.
 
 const OWNER_EMAIL = 'joseph.vanacore@gmail.com';
-const DATA_KEYS = ['categories', 'exercises', 'logs', 'bodyweight', 'reviews', 'goals', 'plans', 'activeSession'];
+const DATA_KEYS = ['categories', 'exercises', 'logs', 'bodyweight', 'reviews', 'reviewQuestions', 'goals', 'plans', 'activeSession'];
+const DEFAULT_REVIEW_QUESTIONS = [
+    { id: 'calories', label: 'Calories vs. goal', options: ['Above', 'Below', 'At Goal'] },
+    { id: 'protein', label: 'Protein vs. goal', options: ['Below', 'Met Goal'] },
+    { id: 'activity', label: 'Activity level', options: ['Not Active', 'Light', 'Moderate', 'High'] },
+    { id: 'workout', label: 'Workout', options: ['No', 'Bad', 'Average', 'Good'] },
+];
 const DATA_DEFAULTS = {
     categories: [],
     exercises: [],
     logs: [],
     bodyweight: [],
     reviews: [],
+    reviewQuestions: DEFAULT_REVIEW_QUESTIONS,
     goals: { calorieGoal: null, proteinGoal: null },
     plans: [],
     activeSession: null,
@@ -41,6 +48,7 @@ async function ensureSeeded() {
     batch.set(userDoc('logs'), { value: isOwner ? SEED_DATA.logs : [] });
     batch.set(userDoc('bodyweight'), { value: [] });
     batch.set(userDoc('reviews'), { value: [] });
+    batch.set(userDoc('reviewQuestions'), { value: DEFAULT_REVIEW_QUESTIONS });
     batch.set(userDoc('goals'), { value: { calorieGoal: null, proteinGoal: null } });
     batch.set(userDoc('plans'), { value: [] });
     batch.set(seededRef, { value: true });
@@ -53,6 +61,7 @@ async function initialLoadAndSync() {
         cloudData[key] = snaps[i].exists ? snaps[i].data().value : DATA_DEFAULTS[key];
     });
     renderEverything();
+    renderReviewFormFields();
     resumeSessionIfAny();
 
     dataUnsubscribers = DATA_KEYS.map(key =>
@@ -83,6 +92,9 @@ function saveBodyweight(v) { cloudData.bodyweight = v; syncWrite('bodyweight', v
 
 function getReviews() { return cloudData.reviews; }
 function saveReviews(v) { cloudData.reviews = v; syncWrite('reviews', v); }
+
+function getReviewQuestions() { return cloudData.reviewQuestions; }
+function saveReviewQuestions(v) { cloudData.reviewQuestions = v; syncWrite('reviewQuestions', v); }
 
 function getGoals() { return cloudData.goals; }
 function saveGoals(v) { cloudData.goals = v; syncWrite('goals', v); }
@@ -374,13 +386,17 @@ function populateDetailView(exerciseId) {
 
     if (isCardio) {
         resetCardioForm();
+        document.getElementById('cardio-date-row').classList.toggle('hidden', !!activeSession);
+        if (activeSession) document.getElementById('cardio-date').value = activeSession.date;
         renderCardioHistory(exerciseId);
     } else {
-        document.getElementById('log-date').value = todayStr();
+        const dateForToday = activeSession ? activeSession.date : todayStr();
+        document.getElementById('log-date-row').classList.toggle('hidden', !!activeSession);
+        document.getElementById('log-date').value = dateForToday;
         document.getElementById('log-weight').value = '';
         document.getElementById('log-reps').value = '';
         collapseLogComment();
-        updateLogSetNumberUI(nextSetNumberForToday(exerciseId, todayStr()));
+        updateLogSetNumberUI(nextSetNumberForToday(exerciseId, dateForToday));
         renderLogHistory(exerciseId);
     }
 
@@ -409,7 +425,7 @@ function renderLogHistory(exerciseId) {
         .sort((a, b) => (b.date).localeCompare(a.date) || (b.set || 0) - (a.set || 0));
 
     if (logs.length === 0) {
-        container.innerHTML = '<p class="no-data">No history yet — log your first set above.</p>';
+        container.innerHTML = '<p class="no-data">No history yet. Log your first set above.</p>';
         return;
     }
 
@@ -450,7 +466,7 @@ function deleteLogEntry(id) {
 
 function updateLogSetNumberUI(n) {
     document.getElementById('log-set-number').value = n;
-    const inRange = n >= 1 && n <= 6;
+    const inRange = n >= 1 && n <= 4;
     document.getElementById('log-set-picker').classList.toggle('hidden', !inRange);
     document.getElementById('log-set-number').classList.toggle('hidden', inRange);
     document.querySelectorAll('#log-set-picker .bg-option[data-set]').forEach(b => {
@@ -571,7 +587,7 @@ function renderCardioHistory(exerciseId) {
     const container = document.getElementById('log-history-list');
     const logs = getLogs().filter(l => l.exerciseId === exerciseId);
     if (logs.length === 0) {
-        container.innerHTML = '<p class="no-data">No history yet — log your first session above.</p>';
+        container.innerHTML = '<p class="no-data">No history yet. Log your first session above.</p>';
         return;
     }
 
@@ -591,7 +607,7 @@ function renderCardioHistory(exerciseId) {
             if (l.segments && l.segments.length) {
                 parts.push(l.segments.map(s => `${s.time ?? '?'}m @ ${s.zone || '?'}`).join(', '));
             }
-            const main = parts.join(' — ') || '(no details)';
+            const main = parts.join(' · ') || '(no details)';
             const comment = l.comment ? ` <span class="card-sub">${escapeHtml(l.comment)}</span>` : '';
             html += `<div class="history-set">
                 <span>${escapeHtml(main)}${comment}</span>
@@ -679,7 +695,7 @@ function startSessionFromPlan(planId) {
         alert('This plan has no exercises in it.');
         return;
     }
-    activeSession = { planId: plan.id, planName: plan.name, exerciseIds: [...plan.exerciseIds], completed: plan.exerciseIds.map(() => false), currentIndex: 0 };
+    activeSession = { planId: plan.id, planName: plan.name, exerciseIds: [...plan.exerciseIds], completed: plan.exerciseIds.map(() => false), currentIndex: 0, date: todayStr() };
     saveActiveSession(activeSession);
     enterSessionMode();
 }
@@ -694,6 +710,8 @@ function enterSessionMode() {
 
     document.getElementById('log-session-view').classList.remove('hidden');
     document.getElementById('log-step-detail').classList.remove('hidden');
+
+    document.getElementById('session-date').value = activeSession.date;
 
     renderSessionStrip();
     populateDetailView(activeSession.exerciseIds[activeSession.currentIndex]);
@@ -721,7 +739,7 @@ function renderSessionStrip() {
         return `
         <div class="${rowCls}">
             <input type="checkbox" class="session-complete-cb" data-idx="${idx}" ${isDone ? 'checked' : ''}>
-            <button type="button" class="session-pill-name" data-idx="${idx}">${idx + 1}. ${escapeHtml(name)}</button>
+            <button type="button" class="session-pill-name" data-idx="${idx}">${escapeHtml(name)}</button>
         </div>`;
     }).join('');
 
@@ -738,7 +756,9 @@ function renderSessionStrip() {
     });
 
     document.getElementById('log-session-title').textContent = activeSession.planName;
-    document.getElementById('session-position').textContent = `${activeSession.currentIndex + 1} of ${activeSession.exerciseIds.length}`;
+
+    const allDone = activeSession.completed.length > 0 && activeSession.completed.every(c => c);
+    document.getElementById('session-finish-row').classList.toggle('hidden', !allDone);
 }
 
 function jumpToSessionIndex(idx) {
@@ -803,6 +823,15 @@ function initSessionControls() {
         if (confirm('Exit this planned workout? Anything already logged stays saved.')) exitSessionMode();
     });
 
+    document.getElementById('session-finish-btn').addEventListener('click', exitSessionMode);
+
+    document.getElementById('session-date').addEventListener('change', () => {
+        activeSession.date = document.getElementById('session-date').value || todayStr();
+        saveActiveSession(activeSession);
+        document.getElementById('log-date').value = activeSession.date;
+        document.getElementById('cardio-date').value = activeSession.date;
+    });
+
     document.getElementById('session-swap-btn').addEventListener('click', () => openSessionPicker('swap'));
     document.getElementById('session-add-btn').addEventListener('click', () => openSessionPicker('add'));
     document.getElementById('session-remove-btn').addEventListener('click', removeCurrentFromSession);
@@ -813,8 +842,17 @@ function initSessionControls() {
 
 function resumeSessionIfAny() {
     const saved = getActiveSession();
-    if (!saved) return;
+    if (!saved) {
+        activeSession = null;
+        document.getElementById('log-session-view').classList.add('hidden');
+        document.getElementById('log-step-detail').classList.add('hidden');
+        document.getElementById('log-plan-picker').classList.add('hidden');
+        document.getElementById('log-start-row').classList.remove('hidden');
+        document.getElementById('log-step-category').classList.remove('hidden');
+        return;
+    }
     if (!Array.isArray(saved.completed)) saved.completed = saved.exerciseIds.map(() => false);
+    if (!saved.date) saved.date = todayStr();
     activeSession = saved;
     enterSessionMode();
 }
@@ -1113,7 +1151,7 @@ function renameExercise(id) {
         return;
     }
 
-    // Only the display name changes — id stays the same, so all logged history stays linked.
+    // Only the display name changes; id stays the same, so all logged history stays linked.
     exercise.name = trimmed;
     saveExercises(exercises);
     renderCategoryManager();
@@ -1130,7 +1168,7 @@ function moveExercise(id, newCategory) {
         return;
     }
 
-    // Only the category field changes — logs reference the exercise id, not its category, so history is untouched.
+    // Only the category field changes; logs reference the exercise id, not its category, so history is untouched.
     exercise.category = newCategory;
     saveExercises(exercises);
     openCategoryBlocks.add(newCategory);
@@ -1295,7 +1333,7 @@ function renderBodyweightList() {
             <div class="card card-row">
                 <div>
                     <div class="card-title">${e.weight} lb</div>
-                    <div class="card-sub">${formatDate(e.date)}${e.comment ? ' — ' + escapeHtml(e.comment) : ''}</div>
+                    <div class="card-sub">${formatDate(e.date)}${e.comment ? ' · ' + escapeHtml(e.comment) : ''}</div>
                 </div>
                 <button class="small-btn danger-btn" data-id="${e.id}">Delete</button>
             </div>
@@ -1332,37 +1370,58 @@ function initBodyTab() {
 
 // ============ DAILY REVIEW TAB ============
 
-function initButtonGroup(id) {
-    const el = document.getElementById(id);
-    const options = JSON.parse(el.dataset.options);
-    el.innerHTML = options.map(o => `<button type="button" class="bg-option" data-val="${escapeHtml(o)}">${escapeHtml(o)}</button>`).join('');
-    el.querySelectorAll('.bg-option').forEach(btn => {
-        btn.addEventListener('click', () => {
-            el.querySelectorAll('.bg-option').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            el.dataset.value = btn.dataset.val;
-            if (id === 'review-workedout') {
-                document.getElementById('review-quality-row').classList.toggle('hidden', btn.dataset.val !== 'Yes');
-            }
+// Shared with the question manager: derives a 1-4 (worst-best) level from
+// where an answer sits in its question's ordered option list, so the grid's
+// color-coding works for any custom question without per-question logic.
+function levelForOptionIndex(index, total) {
+    if (total <= 1) return 4;
+    return Math.floor((index / (total - 1)) * 3) + 1;
+}
+
+function answerLevel(question, value) {
+    const idx = question.options.indexOf(value);
+    if (idx < 0) return 1;
+    return levelForOptionIndex(idx, question.options.length);
+}
+
+// Reviews saved before the customizable-questions system used fixed fields
+// instead of an `answers` map - adapt those on the fly rather than migrating.
+function reviewEntryAnswers(r) {
+    if (r.answers) return r.answers;
+    return {
+        calories: r.calories,
+        protein: r.protein,
+        activity: r.activity,
+        workout: r.workedOut ? (r.quality || 'Good') : 'No',
+    };
+}
+
+function renderReviewFormFields() {
+    const questions = getReviewQuestions();
+    const container = document.getElementById('review-questions-fields');
+    container.innerHTML = questions.map(q => `
+        <div class="form-row">
+            <label>${escapeHtml(q.label)}</label>
+            <div class="button-group review-q-group" data-qid="${q.id}">
+                ${q.options.map(opt => `<button type="button" class="bg-option" data-val="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`).join('')}
+            </div>
+        </div>
+    `).join('');
+    container.querySelectorAll('.review-q-group').forEach(group => {
+        group.querySelectorAll('.bg-option').forEach(btn => {
+            btn.addEventListener('click', () => {
+                group.querySelectorAll('.bg-option').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                group.dataset.value = btn.dataset.val;
+            });
         });
     });
-}
-
-function getButtonGroupValue(id) {
-    return document.getElementById(id).dataset.value || null;
-}
-
-function setButtonGroupValue(id, val) {
-    const el = document.getElementById(id);
-    el.dataset.value = val || '';
-    el.querySelectorAll('.bg-option').forEach(b => b.classList.toggle('selected', b.dataset.val === val));
 }
 
 function resetReviewForm() {
     document.getElementById('review-date').value = todayStr();
     document.getElementById('review-note').value = '';
-    ['review-calories', 'review-protein', 'review-activity', 'review-workedout', 'review-quality'].forEach(id => setButtonGroupValue(id, null));
-    document.getElementById('review-quality-row').classList.add('hidden');
+    renderReviewFormFields();
 }
 
 let reviewViewMode = 'list';
@@ -1382,34 +1441,37 @@ function refreshReviewView() {
 }
 
 function computeReviewStatsText() {
+    const questions = getReviewQuestions();
     const entries = getReviews().slice().sort((a, b) => b.date.localeCompare(a.date));
-    if (entries.length === 0) return '';
+    if (entries.length === 0 || questions.length === 0) return '';
 
     const last7 = entries.slice(0, 7);
-    const proteinMet = last7.filter(r => r.protein === 'Met Goal').length;
-    const caloriesOnTarget = last7.filter(r => r.calories === 'At Goal').length;
-    const activeDays = last7.filter(r => r.activity !== 'Not Active').length;
+    const parts = questions.map(q => {
+        const best = q.options[q.options.length - 1];
+        const count = last7.filter(r => reviewEntryAnswers(r)[q.id] === best).length;
+        return `${q.label} ${count}/${last7.length}`;
+    });
 
-    return `Last ${last7.length}: protein ${proteinMet}/${last7.length}, calories ${caloriesOnTarget}/${last7.length}, active ${activeDays}/${last7.length}`;
+    return `Last ${last7.length}: ` + parts.join(', ');
 }
 
 function renderReviewList() {
     const container = document.getElementById('review-list');
+    const questions = getReviewQuestions();
     const entries = getReviews().slice().sort((a, b) => b.date.localeCompare(a.date));
     if (entries.length === 0) {
         container.innerHTML = '<p class="no-data">No daily reviews yet.</p>';
         return;
     }
     container.innerHTML = entries.map(r => {
-        const workout = r.workedOut ? `Yes (${r.quality})` : 'No';
-        const calGoal = r.calorieGoal ? ` (goal: ${r.calorieGoal})` : '';
-        const proGoal = r.proteinGoal ? ` (goal: ${r.proteinGoal}g)` : '';
+        const answers = reviewEntryAnswers(r);
+        const summary = questions.map(q => `${escapeHtml(q.label)}: ${escapeHtml(answers[q.id] ?? '-')}`).join(' · ');
         const note = showReviewComments && r.note ? `<div class="review-note">${escapeHtml(r.note)}</div>` : '';
         return `
         <div class="card card-row">
             <div>
                 <div class="card-title">${formatDate(r.date)}</div>
-                <div class="card-sub">Calories: ${escapeHtml(r.calories)}${calGoal} · Protein: ${escapeHtml(r.protein)}${proGoal} · Activity: ${escapeHtml(r.activity)} · Workout: ${escapeHtml(workout)}</div>
+                <div class="card-sub">${summary}</div>
                 ${note}
             </div>
             <button class="small-btn danger-btn" data-id="${r.id}">Delete</button>
@@ -1424,31 +1486,11 @@ function renderReviewList() {
     });
 }
 
-function workoutLevel(r) {
-    if (!r.workedOut) return 1;
-    if (r.quality === 'Bad') return 2;
-    if (r.quality === 'Average') return 3;
-    return 4; // Good
-}
-
-function proteinLevel(r) {
-    return r.protein === 'Met Goal' ? 4 : 1;
-}
-
-function caloriesLevel(r) {
-    if (r.calories === 'At Goal') return 4;
-    if (r.calories === 'Below') return 2;
-    return 1; // Above
-}
-
-function activityLevel(r) {
-    return { 'Not Active': 1, 'Light': 2, 'Moderate': 3, 'High': 4 }[r.activity] || 1;
-}
-
 function renderReviewGrid() {
     const container = document.getElementById('review-grid');
+    const questions = getReviewQuestions();
     const entries = getReviews().slice().sort((a, b) => b.date.localeCompare(a.date));
-    if (entries.length === 0) {
+    if (entries.length === 0 || questions.length === 0) {
         container.innerHTML = '<p class="no-data">No daily reviews yet.</p>';
         return;
     }
@@ -1456,34 +1498,183 @@ function renderReviewGrid() {
     const glyphs = { 1: 'x', 2: '-', 3: 'o', 4: '✓' };
     const cell = level => `<span class="habit-cell level-${level}">${glyphs[level]}</span>`;
 
-    const rows = entries.map(r => `
-        <tr>
-            <td>${formatDate(r.date)}</td>
-            <td>${cell(workoutLevel(r))}</td>
-            <td>${cell(proteinLevel(r))}</td>
-            <td>${cell(caloriesLevel(r))}</td>
-            <td>${cell(activityLevel(r))}</td>
-            ${showReviewComments ? `<td class="review-note-cell">${r.note ? escapeHtml(r.note) : ''}</td>` : ''}
-        </tr>
-    `).join('');
+    const rows = entries.map(r => {
+        const answers = reviewEntryAnswers(r);
+        const cells = questions.map(q => `<td>${cell(answerLevel(q, answers[q.id]))}</td>`).join('');
+        const noteCell = showReviewComments ? `<td class="review-note-cell">${r.note ? escapeHtml(r.note) : ''}</td>` : '';
+        return `<tr><td>${formatDate(r.date)}</td>${cells}${noteCell}</tr>`;
+    }).join('');
+
+    const headerCells = questions.map(q => `<th>${escapeHtml(q.label)}</th>`).join('');
 
     container.innerHTML = `
         <table class="habit-grid">
             <thead>
-                <tr><th>Date</th><th>Workout</th><th>Protein</th><th>Calories</th><th>Active</th>${showReviewComments ? '<th>Note</th>' : ''}</tr>
+                <tr><th>Date</th>${headerCells}${showReviewComments ? '<th>Note</th>' : ''}</tr>
             </thead>
             <tbody>${rows}</tbody>
         </table>`;
+}
+
+// ============ REVIEW QUESTIONS MANAGER ============
+
+function renderQuestionsManager() {
+    const container = document.getElementById('questions-manager-list');
+    const questions = getReviewQuestions();
+
+    if (questions.length === 0) {
+        container.innerHTML = '<p class="no-data">No questions yet. Add one below.</p>';
+        return;
+    }
+
+    container.innerHTML = questions.map(q => `
+        <div class="category-block">
+            <div class="category-header" data-qid="${q.id}">
+                <span class="category-header-title">${escapeHtml(q.label)} (${q.options.length})</span>
+                <span>
+                    <button type="button" class="small-btn rename-question-btn" data-qid="${q.id}">Rename</button>
+                    <button type="button" class="small-btn danger-btn delete-question-btn" data-qid="${q.id}">Delete</button>
+                </span>
+            </div>
+            <div class="category-body open">
+                ${q.options.map((opt, idx) => `
+                    <div class="plan-exercise-row">
+                        <span>${idx + 1}. ${escapeHtml(opt)}</span>
+                        <span class="plan-exercise-row-actions">
+                            <button type="button" class="small-btn move-option-btn" data-qid="${q.id}" data-idx="${idx}" data-dir="-1" ${idx === 0 ? 'disabled' : ''}>&uarr;</button>
+                            <button type="button" class="small-btn move-option-btn" data-qid="${q.id}" data-idx="${idx}" data-dir="1" ${idx === q.options.length - 1 ? 'disabled' : ''}>&darr;</button>
+                            <button type="button" class="small-btn rename-option-btn" data-qid="${q.id}" data-idx="${idx}">Rename</button>
+                            <button type="button" class="small-btn danger-btn delete-option-btn" data-qid="${q.id}" data-idx="${idx}">Delete</button>
+                        </span>
+                    </div>
+                `).join('')}
+                <form class="inline-form add-option-form" data-qid="${q.id}" style="margin-top:10px;">
+                    <input type="text" placeholder="New option (added as the best/highest)" required>
+                    <button type="submit" class="small-btn">+ Add</button>
+                </form>
+            </div>
+        </div>
+    `).join('');
+
+    container.querySelectorAll('.rename-question-btn').forEach(btn => {
+        btn.addEventListener('click', () => renameQuestion(btn.dataset.qid));
+    });
+    container.querySelectorAll('.delete-question-btn').forEach(btn => {
+        btn.addEventListener('click', () => deleteQuestion(btn.dataset.qid));
+    });
+    container.querySelectorAll('.move-option-btn').forEach(btn => {
+        btn.addEventListener('click', () => moveOption(btn.dataset.qid, parseInt(btn.dataset.idx, 10), parseInt(btn.dataset.dir, 10)));
+    });
+    container.querySelectorAll('.rename-option-btn').forEach(btn => {
+        btn.addEventListener('click', () => renameOption(btn.dataset.qid, parseInt(btn.dataset.idx, 10)));
+    });
+    container.querySelectorAll('.delete-option-btn').forEach(btn => {
+        btn.addEventListener('click', () => deleteOption(btn.dataset.qid, parseInt(btn.dataset.idx, 10)));
+    });
+    container.querySelectorAll('.add-option-form').forEach(form => {
+        form.addEventListener('submit', e => {
+            e.preventDefault();
+            const input = form.querySelector('input');
+            addOption(form.dataset.qid, input.value.trim());
+        });
+    });
+}
+
+function findQuestion(qid) {
+    return getReviewQuestions().find(q => q.id === qid);
+}
+
+function saveQuestionsAndRefresh() {
+    saveReviewQuestions(getReviewQuestions());
+    renderQuestionsManager();
+    renderReviewFormFields();
+    refreshReviewView();
+}
+
+function addQuestion() {
+    const label = prompt('New question:');
+    if (!label || !label.trim()) return;
+    const trimmed = label.trim();
+    const questions = getReviewQuestions();
+    let id = slugify(trimmed) || `question-${Date.now()}`;
+    if (questions.some(q => q.id === id)) id = `${id}-${Date.now()}`;
+    questions.push({ id, label: trimmed, options: ['Option A', 'Option B'] });
+    saveQuestionsAndRefresh();
+}
+
+function renameQuestion(qid) {
+    const q = findQuestion(qid);
+    if (!q) return;
+    const label = prompt('Rename question:', q.label);
+    if (!label || !label.trim()) return;
+    q.label = label.trim();
+    saveQuestionsAndRefresh();
+}
+
+function deleteQuestion(qid) {
+    const q = findQuestion(qid);
+    if (!q) return;
+    if (!confirm(`Delete "${q.label}"? Past reviews keep their saved answer, but you won't be asked this going forward.`)) return;
+    saveReviewQuestions(getReviewQuestions().filter(x => x.id !== qid));
+    renderQuestionsManager();
+    renderReviewFormFields();
+    refreshReviewView();
+}
+
+function addOption(qid, name) {
+    if (!name) return;
+    const q = findQuestion(qid);
+    if (!q) return;
+    if (q.options.some(o => o.toLowerCase() === name.toLowerCase())) {
+        alert('That option already exists for this question.');
+        return;
+    }
+    q.options.push(name);
+    saveQuestionsAndRefresh();
+}
+
+function renameOption(qid, idx) {
+    const q = findQuestion(qid);
+    if (!q) return;
+    const name = prompt('Rename option:', q.options[idx]);
+    if (!name || !name.trim()) return;
+    q.options[idx] = name.trim();
+    saveQuestionsAndRefresh();
+}
+
+function deleteOption(qid, idx) {
+    const q = findQuestion(qid);
+    if (!q) return;
+    if (q.options.length <= 1) {
+        alert('A question needs at least one option. Delete the whole question instead if you no longer need it.');
+        return;
+    }
+    if (!confirm(`Delete "${q.options[idx]}"?`)) return;
+    q.options.splice(idx, 1);
+    saveQuestionsAndRefresh();
+}
+
+function moveOption(qid, idx, dir) {
+    const q = findQuestion(qid);
+    if (!q) return;
+    const newIdx = idx + dir;
+    if (newIdx < 0 || newIdx >= q.options.length) return;
+    [q.options[idx], q.options[newIdx]] = [q.options[newIdx], q.options[idx]];
+    saveQuestionsAndRefresh();
+}
+
+function initQuestionsManager() {
+    document.getElementById('add-question-btn').addEventListener('click', addQuestion);
 }
 
 function renderGoalsDisplay() {
     const goals = getGoals();
     const display = document.getElementById('goals-current-display');
     if (!goals.calorieGoal && !goals.proteinGoal) {
-        display.textContent = 'No goals set yet — new reviews will be saved without a goal reference.';
+        display.textContent = 'No goals set yet. New reviews will be saved without a goal reference.';
         return;
     }
-    display.textContent = `Current goals: ${goals.calorieGoal || '—'} calories, ${goals.proteinGoal || '—'}g protein.`;
+    display.textContent = `Current goals: ${goals.calorieGoal || '-'} calories, ${goals.proteinGoal || '-'}g protein.`;
 }
 
 function renderGoalsForm() {
@@ -1510,25 +1701,24 @@ function initGoalsForm() {
 
 function initReviewTab() {
     initGoalsForm();
-    ['review-calories', 'review-protein', 'review-activity', 'review-workedout', 'review-quality'].forEach(initButtonGroup);
+    initQuestionsManager();
     resetReviewForm();
 
     document.getElementById('review-form').addEventListener('submit', e => {
         e.preventDefault();
         const date = document.getElementById('review-date').value;
-        const calories = getButtonGroupValue('review-calories');
-        const protein = getButtonGroupValue('review-protein');
-        const activity = getButtonGroupValue('review-activity');
-        const workedOutVal = getButtonGroupValue('review-workedout');
-        const quality = getButtonGroupValue('review-quality');
         const note = document.getElementById('review-note').value.trim();
 
-        if (!date || !calories || !protein || !activity || !workedOutVal) {
+        const answers = {};
+        let allAnswered = true;
+        document.querySelectorAll('.review-q-group').forEach(group => {
+            const val = group.dataset.value;
+            if (!val) allAnswered = false;
+            answers[group.dataset.qid] = val;
+        });
+
+        if (!date || !allAnswered) {
             alert('Please answer every question before saving.');
-            return;
-        }
-        if (workedOutVal === 'Yes' && !quality) {
-            alert('Please rate the workout quality.');
             return;
         }
 
@@ -1540,11 +1730,7 @@ function initReviewTab() {
         const entry = {
             id: existingIdx >= 0 ? reviews[existingIdx].id : Date.now(),
             date,
-            calories,
-            protein,
-            activity,
-            workedOut: workedOutVal === 'Yes',
-            quality: workedOutVal === 'Yes' ? quality : null,
+            answers,
             calorieGoal: goals.calorieGoal,
             proteinGoal: goals.proteinGoal,
             note: note || null,
@@ -1637,6 +1823,7 @@ function renderEverything() {
     renderCategoryManager();
     renderBodyweightList();
     renderGoalsForm();
+    renderQuestionsManager();
     refreshReviewView();
 }
 

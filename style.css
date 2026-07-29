@@ -322,6 +322,13 @@ form {
     }
 }
 
+.log-submit-row {
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
 .date-row {
     display: flex;
     align-items: center;
