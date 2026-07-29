@@ -1,59 +1,97 @@
-// ============ STORAGE ============
+// ============ STORAGE (Firestore-backed, synced per signed-in user) ============
+// get*/save* keep the exact same synchronous shape the rest of the app already
+// relies on: cloudData is an in-memory cache kept current by onSnapshot
+// listeners, and save*() updates the cache immediately (optimistic) then
+// writes through to Firestore in the background.
 
-const KEYS = {
-    categories: 'wt_categories',
-    exercises: 'wt_exercises',
-    logs: 'wt_logs',
-    bodyweight: 'wt_bodyweight',
-    reviews: 'wt_reviews',
-    goals: 'wt_goals',
-    plans: 'wt_plans',
-    activeSession: 'wt_active_session',
-    seeded: 'wt_seeded',
+const OWNER_EMAIL = 'joseph.vanacore@gmail.com';
+const DATA_KEYS = ['categories', 'exercises', 'logs', 'bodyweight', 'reviews', 'goals', 'plans', 'activeSession'];
+const DATA_DEFAULTS = {
+    categories: [],
+    exercises: [],
+    logs: [],
+    bodyweight: [],
+    reviews: [],
+    goals: { calorieGoal: null, proteinGoal: null },
+    plans: [],
+    activeSession: null,
 };
 
-function initData() {
-    if (localStorage.getItem(KEYS.seeded) === 'yes') return;
+let currentUser = null;
+let cloudData = JSON.parse(JSON.stringify(DATA_DEFAULTS));
+let dataUnsubscribers = [];
 
-    localStorage.setItem(KEYS.categories, JSON.stringify(SEED_DATA.categories));
-    localStorage.setItem(KEYS.exercises, JSON.stringify(SEED_DATA.exercises));
-    localStorage.setItem(KEYS.logs, JSON.stringify(SEED_DATA.logs));
-    localStorage.setItem(KEYS.bodyweight, JSON.stringify([]));
-    localStorage.setItem(KEYS.reviews, JSON.stringify([]));
-    localStorage.setItem(KEYS.goals, JSON.stringify({ calorieGoal: null, proteinGoal: null }));
-    localStorage.setItem(KEYS.plans, JSON.stringify([]));
-    localStorage.setItem(KEYS.seeded, 'yes');
+function userDoc(key) {
+    return db.collection('users').doc(currentUser.uid).collection('appData').doc(key);
 }
 
-function getCategories() { return JSON.parse(localStorage.getItem(KEYS.categories) || '[]'); }
-function saveCategories(v) { localStorage.setItem(KEYS.categories, JSON.stringify(v)); }
-
-function getExercises() { return JSON.parse(localStorage.getItem(KEYS.exercises) || '[]'); }
-function saveExercises(v) { localStorage.setItem(KEYS.exercises, JSON.stringify(v)); }
-
-function getLogs() { return JSON.parse(localStorage.getItem(KEYS.logs) || '[]'); }
-function saveLogs(v) { localStorage.setItem(KEYS.logs, JSON.stringify(v)); }
-
-function getBodyweight() { return JSON.parse(localStorage.getItem(KEYS.bodyweight) || '[]'); }
-function saveBodyweight(v) { localStorage.setItem(KEYS.bodyweight, JSON.stringify(v)); }
-
-function getReviews() { return JSON.parse(localStorage.getItem(KEYS.reviews) || '[]'); }
-function saveReviews(v) { localStorage.setItem(KEYS.reviews, JSON.stringify(v)); }
-
-function getGoals() { return JSON.parse(localStorage.getItem(KEYS.goals) || '{"calorieGoal":null,"proteinGoal":null}'); }
-function saveGoals(v) { localStorage.setItem(KEYS.goals, JSON.stringify(v)); }
-
-function getPlans() { return JSON.parse(localStorage.getItem(KEYS.plans) || '[]'); }
-function savePlans(v) { localStorage.setItem(KEYS.plans, JSON.stringify(v)); }
-
-function getActiveSession() {
-    const raw = localStorage.getItem(KEYS.activeSession);
-    return raw ? JSON.parse(raw) : null;
+function syncWrite(key, value) {
+    userDoc(key).set({ value }).catch(err => console.error(`Failed to save ${key}:`, err));
 }
-function saveActiveSession(v) {
-    if (v) localStorage.setItem(KEYS.activeSession, JSON.stringify(v));
-    else localStorage.removeItem(KEYS.activeSession);
+
+async function ensureSeeded() {
+    const seededRef = userDoc('seeded');
+    const snap = await seededRef.get();
+    if (snap.exists) return;
+
+    const isOwner = currentUser.email === OWNER_EMAIL;
+    const batch = db.batch();
+    batch.set(userDoc('categories'), { value: isOwner ? SEED_DATA.categories : [] });
+    batch.set(userDoc('exercises'), { value: isOwner ? SEED_DATA.exercises : [] });
+    batch.set(userDoc('logs'), { value: isOwner ? SEED_DATA.logs : [] });
+    batch.set(userDoc('bodyweight'), { value: [] });
+    batch.set(userDoc('reviews'), { value: [] });
+    batch.set(userDoc('goals'), { value: { calorieGoal: null, proteinGoal: null } });
+    batch.set(userDoc('plans'), { value: [] });
+    batch.set(seededRef, { value: true });
+    await batch.commit();
 }
+
+async function initialLoadAndSync() {
+    const snaps = await Promise.all(DATA_KEYS.map(key => userDoc(key).get()));
+    DATA_KEYS.forEach((key, i) => {
+        cloudData[key] = snaps[i].exists ? snaps[i].data().value : DATA_DEFAULTS[key];
+    });
+    renderEverything();
+    resumeSessionIfAny();
+
+    dataUnsubscribers = DATA_KEYS.map(key =>
+        userDoc(key).onSnapshot(snap => {
+            cloudData[key] = snap.exists ? snap.data().value : DATA_DEFAULTS[key];
+            renderEverything();
+        })
+    );
+}
+
+function stopSync() {
+    dataUnsubscribers.forEach(unsub => unsub());
+    dataUnsubscribers = [];
+    cloudData = JSON.parse(JSON.stringify(DATA_DEFAULTS));
+}
+
+function getCategories() { return cloudData.categories; }
+function saveCategories(v) { cloudData.categories = v; syncWrite('categories', v); }
+
+function getExercises() { return cloudData.exercises; }
+function saveExercises(v) { cloudData.exercises = v; syncWrite('exercises', v); }
+
+function getLogs() { return cloudData.logs; }
+function saveLogs(v) { cloudData.logs = v; syncWrite('logs', v); }
+
+function getBodyweight() { return cloudData.bodyweight; }
+function saveBodyweight(v) { cloudData.bodyweight = v; syncWrite('bodyweight', v); }
+
+function getReviews() { return cloudData.reviews; }
+function saveReviews(v) { cloudData.reviews = v; syncWrite('reviews', v); }
+
+function getGoals() { return cloudData.goals; }
+function saveGoals(v) { cloudData.goals = v; syncWrite('goals', v); }
+
+function getPlans() { return cloudData.plans; }
+function savePlans(v) { cloudData.plans = v; syncWrite('plans', v); }
+
+function getActiveSession() { return cloudData.activeSession; }
+function saveActiveSession(v) { cloudData.activeSession = v; syncWrite('activeSession', v); }
 
 // ============ HELPERS ============
 
@@ -1299,18 +1337,20 @@ function renderGoalsDisplay() {
     display.textContent = `Current goals: ${goals.calorieGoal || '—'} calories, ${goals.proteinGoal || '—'}g protein.`;
 }
 
-function initGoalsForm() {
+function renderGoalsForm() {
     const goals = getGoals();
     document.getElementById('goal-calories').value = goals.calorieGoal || '';
     document.getElementById('goal-protein').value = goals.proteinGoal || '';
     renderGoalsDisplay();
+}
 
+function initGoalsForm() {
     document.getElementById('goals-form').addEventListener('submit', e => {
         e.preventDefault();
         const calorieGoal = parseFloat(document.getElementById('goal-calories').value) || null;
         const proteinGoal = parseFloat(document.getElementById('goal-protein').value) || null;
         saveGoals({ calorieGoal, proteinGoal });
-        renderGoalsDisplay();
+        renderGoalsForm();
     });
 }
 
@@ -1379,10 +1419,74 @@ function initReviewTab() {
     });
 }
 
+// ============ AUTH ============
+
+function showAuthScreen() {
+    document.getElementById('auth-screen').classList.remove('hidden');
+    document.getElementById('app-shell').classList.add('hidden');
+}
+
+function showApp(user) {
+    document.getElementById('auth-screen').classList.add('hidden');
+    document.getElementById('app-shell').classList.remove('hidden');
+    document.getElementById('user-email').textContent = user.email;
+}
+
+let authMode = 'signin';
+
+function initAuthUI() {
+    document.getElementById('auth-toggle-mode-btn').addEventListener('click', () => {
+        authMode = authMode === 'signin' ? 'signup' : 'signin';
+        document.getElementById('auth-submit-btn').textContent = authMode === 'signin' ? 'Sign In' : 'Sign Up';
+        document.getElementById('auth-toggle-mode-btn').textContent =
+            authMode === 'signin' ? 'Need an account? Sign up' : 'Already have an account? Sign in';
+        document.getElementById('auth-error').classList.add('hidden');
+    });
+
+    document.getElementById('auth-form').addEventListener('submit', async e => {
+        e.preventDefault();
+        const email = document.getElementById('auth-email').value.trim();
+        const password = document.getElementById('auth-password').value;
+        const errorEl = document.getElementById('auth-error');
+        errorEl.classList.add('hidden');
+        try {
+            if (authMode === 'signin') {
+                await auth.signInWithEmailAndPassword(email, password);
+            } else {
+                await auth.createUserWithEmailAndPassword(email, password);
+            }
+        } catch (err) {
+            errorEl.textContent = err.message;
+            errorEl.classList.remove('hidden');
+        }
+    });
+
+    document.getElementById('google-signin-btn').addEventListener('click', async () => {
+        const errorEl = document.getElementById('auth-error');
+        errorEl.classList.add('hidden');
+        try {
+            await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        } catch (err) {
+            errorEl.textContent = err.message;
+            errorEl.classList.remove('hidden');
+        }
+    });
+
+    document.getElementById('sign-out-btn').addEventListener('click', () => auth.signOut());
+}
+
 // ============ INIT ============
 
+function renderEverything() {
+    renderLogCategoryStep();
+    renderPlanList();
+    renderCategoryManager();
+    renderBodyweightList();
+    renderGoalsForm();
+    refreshReviewView();
+}
+
 document.addEventListener('DOMContentLoaded', () => {
-    initData();
     initTabs();
     initLogTab();
     initCardioForm();
@@ -1391,16 +1495,22 @@ document.addEventListener('DOMContentLoaded', () => {
     initExercisesTab();
     initBodyTab();
     initReviewTab();
-
-    renderLogCategoryStep();
-    renderPlanList();
-    renderCategoryManager();
-    renderBodyweightList();
-    refreshReviewView();
-
-    resumeSessionIfAny();
+    initAuthUI();
 
     if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('sw.js').catch(() => {});
     }
+
+    auth.onAuthStateChanged(async user => {
+        stopSync();
+        if (user) {
+            currentUser = user;
+            showApp(user);
+            await ensureSeeded();
+            await initialLoadAndSync();
+        } else {
+            currentUser = null;
+            showAuthScreen();
+        }
+    });
 });

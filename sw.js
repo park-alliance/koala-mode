@@ -1,9 +1,10 @@
-const CACHE_NAME = 'workout-tracker-v1';
+const CACHE_NAME = 'koala-mode-v2';
 const CORE_FILES = [
     './',
     './index.html',
     './style.css',
     './app.js',
+    './firebase-init.js',
     './data-seed.js',
     './manifest.json',
     './icon-192.png',

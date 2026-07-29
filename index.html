@@ -16,8 +16,38 @@
     <link rel="apple-touch-icon" href="icon-192.png">
 </head>
 <body>
+    <!-- AUTH GATE -->
+    <div id="auth-screen">
+        <div class="auth-box">
+            <h1>🐨 Koala Mode</h1>
+            <div id="auth-error" class="auth-error hidden"></div>
+            <form id="auth-form">
+                <div class="form-row">
+                    <label>Email
+                        <input type="email" id="auth-email" required>
+                    </label>
+                </div>
+                <div class="form-row">
+                    <label>Password
+                        <input type="password" id="auth-password" required minlength="6">
+                    </label>
+                </div>
+                <button type="submit" class="primary-btn" id="auth-submit-btn">Sign In</button>
+            </form>
+            <button type="button" class="link-btn" id="auth-toggle-mode-btn">Need an account? Sign up</button>
+            <div class="auth-divider">or</div>
+            <button type="button" class="primary-btn" id="google-signin-btn">Sign in with Google</button>
+        </div>
+    </div>
+
+    <!-- APP SHELL -->
+    <div id="app-shell" class="hidden">
     <header>
         <h1>Koala Mode</h1>
+        <div id="user-info">
+            <span id="user-email"></span>
+            <button type="button" class="link-btn" id="sign-out-btn">Sign Out</button>
+        </div>
     </header>
 
     <nav id="tab-nav">
@@ -253,7 +283,12 @@
             <div id="review-grid" class="hidden"></div>
         </section>
     </main>
+    </div>
 
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+    <script src="firebase-init.js"></script>
     <script src="data-seed.js"></script>
     <script src="app.js"></script>
 </body>
