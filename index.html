@@ -105,42 +105,49 @@
                 <h2 id="log-detail-exercise-name"></h2>
 
                 <form id="log-set-form">
-                    <div class="form-row">
-                        <label>Date
-                            <input type="date" id="log-date" required>
-                        </label>
+                    <div class="date-row">
+                        <label for="log-date">Date</label>
+                        <input type="date" id="log-date" class="date-compact" required>
                     </div>
-                    <div class="form-row form-row-3">
+                    <div class="form-row form-row-2">
                         <label>Weight (lb)
-                            <input type="number" id="log-weight" step="0.5" placeholder="135">
+                            <input type="number" id="log-weight" step="0.5" inputmode="decimal" placeholder="135">
                         </label>
                         <label>Reps
-                            <input type="number" id="log-reps" step="1" placeholder="10">
-                        </label>
-                        <label>Set #
-                            <input type="number" id="log-set-number" step="1" min="1">
+                            <input type="number" id="log-reps" step="1" inputmode="numeric" placeholder="10">
                         </label>
                     </div>
                     <div class="form-row">
-                        <label>Comment
-                            <input type="text" id="log-comment" placeholder="optional">
-                        </label>
+                        <label>Set #</label>
+                        <div class="button-group" id="log-set-picker">
+                            <button type="button" class="bg-option" data-set="1">1</button>
+                            <button type="button" class="bg-option" data-set="2">2</button>
+                            <button type="button" class="bg-option" data-set="3">3</button>
+                            <button type="button" class="bg-option" data-set="4">4</button>
+                            <button type="button" class="bg-option" data-set="5">5</button>
+                            <button type="button" class="bg-option" data-set="6">6</button>
+                            <button type="button" class="bg-option" id="log-set-edit-btn" title="Enter a different number">&#9998;</button>
+                        </div>
+                        <input type="number" id="log-set-number" step="1" min="1" inputmode="numeric" class="hidden">
+                    </div>
+                    <div class="form-row">
+                        <button type="button" class="link-btn" id="log-comment-toggle">+ Add comment</button>
+                        <input type="text" id="log-comment" placeholder="optional" class="hidden">
                     </div>
                     <button type="submit" class="primary-btn">Log Set</button>
                 </form>
 
                 <form id="log-cardio-form" class="hidden">
-                    <div class="form-row">
-                        <label>Date
-                            <input type="date" id="cardio-date" required>
-                        </label>
+                    <div class="date-row">
+                        <label for="cardio-date">Date</label>
+                        <input type="date" id="cardio-date" class="date-compact" required>
                     </div>
                     <div class="form-row form-row-3">
                         <label>Total Time (min)
-                            <input type="number" id="cardio-total-time" step="0.5" placeholder="20">
+                            <input type="number" id="cardio-total-time" step="0.5" inputmode="decimal" placeholder="20">
                         </label>
                         <label>Distance (mi) — optional
-                            <input type="number" id="cardio-distance" step="0.01" placeholder="3.1">
+                            <input type="number" id="cardio-distance" step="0.01" inputmode="decimal" placeholder="3.1">
                         </label>
                     </div>
                     <div class="form-row" id="cardio-segments-row">
@@ -223,11 +230,12 @@
         <section id="tab-body" class="tab-panel">
             <h2>Weight</h2>
             <form id="bodyweight-form" class="form-row form-row-3">
-                <label>Date
-                    <input type="date" id="bw-date" required>
-                </label>
+                <div class="date-row">
+                    <label for="bw-date">Date</label>
+                    <input type="date" id="bw-date" class="date-compact" required>
+                </div>
                 <label>Weight (lb)
-                    <input type="number" id="bw-weight" step="0.1" placeholder="180" required>
+                    <input type="number" id="bw-weight" step="0.1" inputmode="decimal" placeholder="180" required>
                 </label>
                 <button type="submit" class="primary-btn">Log Weight</button>
             </form>
@@ -249,10 +257,10 @@
             <div id="goals-panel" class="hidden">
                 <form id="goals-form" class="form-row-3">
                     <label>Daily Calorie Goal
-                        <input type="number" id="goal-calories" step="1" placeholder="2200">
+                        <input type="number" id="goal-calories" step="1" inputmode="numeric" placeholder="2200">
                     </label>
                     <label>Daily Protein Goal (g)
-                        <input type="number" id="goal-protein" step="1" placeholder="180">
+                        <input type="number" id="goal-protein" step="1" inputmode="numeric" placeholder="180">
                     </label>
                     <button type="submit" class="primary-btn">Save Goals</button>
                 </form>
@@ -260,10 +268,9 @@
             </div>
 
             <form id="review-form">
-                <div class="form-row">
-                    <label>Date
-                        <input type="date" id="review-date" required>
-                    </label>
+                <div class="date-row">
+                    <label for="review-date">Date</label>
+                    <input type="date" id="review-date" class="date-compact" required>
                 </div>
                 <div class="form-row">
                     <label>Calories vs. goal</label>

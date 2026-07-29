@@ -309,10 +309,46 @@ form {
     align-items: end;
 }
 
+.form-row-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    align-items: end;
+}
+
 @media (max-width: 480px) {
     .form-row-3 {
         grid-template-columns: 1fr;
     }
+}
+
+.date-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.date-row label {
+    font-size: 13px;
+    color: var(--muted);
+    flex-shrink: 0;
+}
+
+.date-compact {
+    width: auto;
+    max-width: 150px;
+    min-width: 0;
+    padding: 6px 8px;
+    font-size: 13px;
+    color: var(--muted);
+    transition: padding 0.15s ease, font-size 0.15s ease;
+}
+
+.date-compact:focus {
+    padding: 9px 10px;
+    font-size: 15px;
+    color: var(--text);
 }
 
 label {

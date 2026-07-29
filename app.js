@@ -379,8 +379,8 @@ function populateDetailView(exerciseId) {
         document.getElementById('log-date').value = todayStr();
         document.getElementById('log-weight').value = '';
         document.getElementById('log-reps').value = '';
-        document.getElementById('log-comment').value = '';
-        document.getElementById('log-set-number').value = nextSetNumberForToday(exerciseId, todayStr());
+        collapseLogComment();
+        updateLogSetNumberUI(nextSetNumberForToday(exerciseId, todayStr()));
         renderLogHistory(exerciseId);
     }
 
@@ -448,7 +448,45 @@ function deleteLogEntry(id) {
     renderLogHistory(logCurrentExerciseId);
 }
 
+function updateLogSetNumberUI(n) {
+    document.getElementById('log-set-number').value = n;
+    const inRange = n >= 1 && n <= 6;
+    document.getElementById('log-set-picker').classList.toggle('hidden', !inRange);
+    document.getElementById('log-set-number').classList.toggle('hidden', inRange);
+    document.querySelectorAll('#log-set-picker .bg-option[data-set]').forEach(b => {
+        b.classList.toggle('selected', parseInt(b.dataset.set, 10) === n);
+    });
+}
+
+function initLogSetPicker() {
+    document.querySelectorAll('#log-set-picker .bg-option[data-set]').forEach(btn => {
+        btn.addEventListener('click', () => updateLogSetNumberUI(parseInt(btn.dataset.set, 10)));
+    });
+    document.getElementById('log-set-edit-btn').addEventListener('click', () => {
+        document.getElementById('log-set-picker').classList.add('hidden');
+        document.getElementById('log-set-number').classList.remove('hidden');
+        document.getElementById('log-set-number').focus();
+    });
+}
+
+function collapseLogComment() {
+    document.getElementById('log-comment').value = '';
+    document.getElementById('log-comment').classList.add('hidden');
+    document.getElementById('log-comment-toggle').classList.remove('hidden');
+}
+
+function initLogCommentToggle() {
+    document.getElementById('log-comment-toggle').addEventListener('click', () => {
+        document.getElementById('log-comment-toggle').classList.add('hidden');
+        document.getElementById('log-comment').classList.remove('hidden');
+        document.getElementById('log-comment').focus();
+    });
+}
+
 function initLogTab() {
+    initLogSetPicker();
+    initLogCommentToggle();
+
     document.getElementById('log-back-to-category').addEventListener('click', () => {
         document.getElementById('log-step-exercise').classList.add('hidden');
         document.getElementById('log-step-category').classList.remove('hidden');
@@ -483,8 +521,8 @@ function initLogTab() {
         const nextSet = (setVal ? parseInt(setVal, 10) : nextSetNumberForToday(logCurrentExerciseId, date)) + 1;
         document.getElementById('log-weight').value = '';
         document.getElementById('log-reps').value = '';
-        document.getElementById('log-comment').value = '';
-        document.getElementById('log-set-number').value = nextSet;
+        collapseLogComment();
+        updateLogSetNumberUI(nextSet);
 
         renderLogHistory(logCurrentExerciseId);
 
@@ -508,7 +546,7 @@ function addCardioSegmentRow(timeVal, zoneVal) {
         .concat(CARDIO_ZONES.map(z => `<option value="${z}" ${z === zoneVal ? 'selected' : ''}>${z}</option>`))
         .join('');
     row.innerHTML = `
-        <label>Time (min)<input type="number" step="0.5" class="segment-time" value="${timeVal || ''}"></label>
+        <label>Time (min)<input type="number" step="0.5" inputmode="decimal" class="segment-time" value="${timeVal || ''}"></label>
         <label>Zone<select class="segment-zone">${zoneOptions}</select></label>
         <button type="button" class="small-btn danger-btn">Remove</button>
     `;
