@@ -367,19 +367,23 @@ function addCategoryFromPrompt(name) {
     refreshCategoryDependents();
 }
 
+function syncLogCategoryGridVisibility() {
+    const panelOpen = !document.getElementById('exercise-manager-panel').classList.contains('hidden');
+    document.getElementById('log-category-list').classList.toggle('hidden', panelOpen);
+}
+
 function renderLogCategoryStep() {
     const container = document.getElementById('log-category-list');
     const categories = getCategories();
     container.innerHTML = categories.map(cat =>
         `<button class="grid-btn" data-cat="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`
-    ).join('') + `<button type="button" class="grid-btn add-tile" id="log-add-category-btn">+ New Category</button>`;
+    ).join('') || '<p class="no-data">No categories yet. Tap &#9881; to add one.</p>';
 
     container.querySelectorAll('.grid-btn[data-cat]').forEach(btn => {
         btn.addEventListener('click', () => selectLogCategory(btn.dataset.cat));
     });
-    document.getElementById('log-add-category-btn').addEventListener('click', () => {
-        addCategoryFromPrompt(prompt('New category name:'));
-    });
+
+    syncLogCategoryGridVisibility();
 }
 
 function selectLogCategory(category) {
@@ -391,6 +395,11 @@ function selectLogCategory(category) {
     renderLogExerciseStepContent(category);
 }
 
+function syncLogExerciseGridVisibility() {
+    const panelOpen = !document.getElementById('exercise-list-manager-panel').classList.contains('hidden');
+    document.getElementById('log-exercise-list').classList.toggle('hidden', panelOpen);
+}
+
 function renderLogExerciseStepContent(category) {
     document.getElementById('log-exercise-category-title').textContent = category;
 
@@ -398,31 +407,34 @@ function renderLogExerciseStepContent(category) {
     const exercises = getExercises().filter(e => e.category === category);
     container.innerHTML = exercises.map(ex =>
         `<button class="grid-btn" data-id="${ex.id}">${escapeHtml(ex.name)}</button>`
-    ).join('') + `<button type="button" class="grid-btn add-tile" id="log-add-exercise-btn">+ New Exercise</button>`;
+    ).join('') || '<p class="no-data">No exercises yet. Tap &#9881; to add one.</p>';
 
     container.querySelectorAll('.grid-btn[data-id]').forEach(btn => {
         btn.addEventListener('click', () => selectLogExercise(btn.dataset.id));
     });
-    document.getElementById('log-add-exercise-btn').addEventListener('click', () => {
-        const name = prompt('New exercise name:');
-        if (name && name.trim()) addExercise(category, name.trim());
-    });
 
     renderExerciseListManagerPanel(category);
+    syncLogExerciseGridVisibility();
 }
 
 function renderExerciseListManagerPanel(category) {
     const panel = document.getElementById('exercise-list-manager-panel');
     const exercises = getExercises().filter(e => e.category === category);
-    panel.innerHTML = exercises.map(ex => `
+    const rowsHtml = exercises.map(ex => `
         <div class="exercise-row">
             <span>${escapeHtml(ex.name)}</span>
             <span class="exercise-row-actions">
                 <button class="small-btn rename-ex-btn" data-id="${ex.id}">Rename</button>
                 <button class="small-btn danger-btn delete-ex-btn" data-id="${ex.id}">Delete</button>
             </span>
-        </div>`).join('') || '<p class="no-data">No exercises yet. Use the + New Exercise tile above.</p>';
+        </div>`).join('') || '<p class="no-data">No exercises yet.</p>';
 
+    panel.innerHTML = `<button type="button" class="small-btn gear-add-btn" id="add-exercise-btn">+ Add Exercise</button>${rowsHtml}`;
+
+    document.getElementById('add-exercise-btn').addEventListener('click', () => {
+        const name = prompt('New exercise name:');
+        if (name && name.trim()) addExercise(category, name.trim());
+    });
     panel.querySelectorAll('.rename-ex-btn').forEach(btn => {
         btn.addEventListener('click', () => renameExercise(btn.dataset.id));
     });
@@ -734,23 +746,36 @@ function initCardioForm() {
 let activeSession = null;
 let sessionPickerMode = null; // 'swap' | 'add'
 
+function syncPlanPickerListVisibility() {
+    const panelOpen = !document.getElementById('plan-manager-panel').classList.contains('hidden');
+    document.getElementById('log-plan-picker-list').classList.toggle('hidden', panelOpen);
+}
+
 function renderLogPlanPickerList() {
     const container = document.getElementById('log-plan-picker-list');
     const plans = getPlans();
-    const emptyMsg = plans.length === 0 ? '<p class="no-data">No saved plans yet.</p>' : '';
-    const listHtml = plans.map(p =>
-        `<button type="button" class="grid-btn" data-id="${p.id}" style="display:block;width:100%;text-align:left;margin-bottom:8px;">${escapeHtml(p.name)} <span class="card-sub">(${p.exerciseIds.length} exercises)</span></button>`
-    ).join('');
-    container.innerHTML = emptyMsg + listHtml
-        + `<button type="button" class="primary-btn" id="log-new-plan-btn" style="display:block;width:100%;margin-top:8px;">+ New Plan</button>`;
+    const exercises = getExercises();
+
+    // Brand-new users (zero plans) always see the manager panel, regardless of
+    // the gear toggle, so + New Plan is never hidden behind a click.
+    if (plans.length === 0) {
+        document.getElementById('plan-manager-panel').classList.remove('hidden');
+    }
+
+    container.innerHTML = plans.map(p => {
+        const names = p.exerciseIds.map(id => {
+            const ex = exercises.find(e => e.id === id);
+            return ex ? ex.name : '(deleted exercise)';
+        }).join(', ');
+        return `<button type="button" class="grid-btn" data-id="${p.id}" style="display:block;width:100%;text-align:left;margin-bottom:8px;">${escapeHtml(p.name)}<br><span class="card-sub">${escapeHtml(names)}</span></button>`;
+    }).join('') || '<p class="no-data">No saved plans yet. Tap &#9881; to create one.</p>';
 
     container.querySelectorAll('.grid-btn').forEach(btn => {
         btn.addEventListener('click', () => startSessionFromPlan(btn.dataset.id));
     });
-    document.getElementById('log-new-plan-btn').addEventListener('click', () => {
-        switchTab('plan');
-        openPlanEditor(null);
-    });
+
+    renderPlanList();
+    syncPlanPickerListVisibility();
 }
 
 function startSessionFromPlan(planId) {
@@ -768,6 +793,7 @@ function enterSessionMode() {
     openSessionRowMenuIdx = null;
     document.getElementById('log-start-row').classList.add('hidden');
     document.getElementById('log-plan-picker').classList.add('hidden');
+    document.getElementById('plan-editor').classList.add('hidden');
     document.getElementById('log-step-category').classList.add('hidden');
     document.getElementById('log-step-exercise').classList.add('hidden');
     document.getElementById('log-back-to-exercise').classList.add('hidden');
@@ -788,6 +814,7 @@ function exitSessionMode() {
     document.getElementById('log-session-view').classList.add('hidden');
     document.getElementById('log-step-detail').classList.add('hidden');
     document.getElementById('log-plan-picker').classList.add('hidden');
+    document.getElementById('plan-editor').classList.add('hidden');
     document.getElementById('log-start-row').classList.remove('hidden');
     document.getElementById('log-step-category').classList.remove('hidden');
 
@@ -909,6 +936,7 @@ function initSessionControls() {
     document.getElementById('start-planned-btn').addEventListener('click', () => {
         document.getElementById('log-start-row').classList.add('hidden');
         document.getElementById('log-step-category').classList.add('hidden');
+        document.getElementById('plan-editor').classList.add('hidden');
         document.getElementById('log-plan-picker').classList.remove('hidden');
         renderLogPlanPickerList();
     });
@@ -937,6 +965,7 @@ function resumeSessionIfAny() {
         document.getElementById('log-session-view').classList.add('hidden');
         document.getElementById('log-step-detail').classList.add('hidden');
         document.getElementById('log-plan-picker').classList.add('hidden');
+        document.getElementById('plan-editor').classList.add('hidden');
         document.getElementById('log-start-row').classList.remove('hidden');
         document.getElementById('log-step-category').classList.remove('hidden');
         return;
@@ -952,34 +981,29 @@ function resumeSessionIfAny() {
 let planEditorId = null;
 let planEditorExerciseIds = [];
 
-function renderPlanList() {
-    const container = document.getElementById('plan-list');
-    const plans = getPlans();
-    const exercises = getExercises();
-    if (plans.length === 0) {
-        container.innerHTML = '<p class="no-data">No saved plans yet.</p>';
-        return;
-    }
-    container.innerHTML = plans.map(p => {
-        const names = p.exerciseIds.map(id => {
-            const ex = exercises.find(e => e.id === id);
-            return ex ? ex.name : '(deleted exercise)';
-        }).join(', ');
-        return `
-        <div class="card card-row">
-            <div>
-                <div class="card-title">${escapeHtml(p.name)}</div>
-                <div class="card-sub">${escapeHtml(names)}</div>
-            </div>
-            <span>
-                <button type="button" class="small-btn" data-start="${p.id}">Start</button>
-                <button type="button" class="small-btn" data-edit="${p.id}">Edit</button>
-                <button type="button" class="small-btn" data-copy="${p.id}">Copy</button>
-                <button type="button" class="small-btn danger-btn" data-delete="${p.id}">Delete</button>
-            </span>
-        </div>`;
-    }).join('');
+let planListOpenGroups = null;
 
+function planCardHtml(p, exercises) {
+    const names = p.exerciseIds.map(id => {
+        const ex = exercises.find(e => e.id === id);
+        return ex ? ex.name : '(deleted exercise)';
+    }).join(', ');
+    return `
+    <div class="card card-row">
+        <div>
+            <div class="card-title">${escapeHtml(p.name)}</div>
+            <div class="card-sub">${escapeHtml(names)}</div>
+        </div>
+        <span>
+            <button type="button" class="small-btn" data-start="${p.id}">Start</button>
+            <button type="button" class="small-btn" data-edit="${p.id}">Edit</button>
+            <button type="button" class="small-btn" data-copy="${p.id}">Copy</button>
+            <button type="button" class="small-btn danger-btn" data-delete="${p.id}">Delete</button>
+        </span>
+    </div>`;
+}
+
+function wirePlanListActions(container) {
     container.querySelectorAll('[data-start]').forEach(btn => {
         btn.addEventListener('click', () => {
             switchTab('log');
@@ -1001,6 +1025,71 @@ function renderPlanList() {
     });
 }
 
+// A plan has no stored category - its group label is derived live from the
+// categories of the exercises actually in it (in the order they were added),
+// e.g. a plan with a Bench Press and a Lateral Raise groups under "Push", one
+// mixing Push and Legs exercises groups under "Push + Legs". This can't go
+// stale the way a manually-picked tag could.
+function planCategoryLabel(plan, exercises) {
+    const cats = [];
+    plan.exerciseIds.forEach(id => {
+        const ex = exercises.find(e => e.id === id);
+        if (ex && !cats.includes(ex.category)) cats.push(ex.category);
+    });
+    return cats.length ? cats.join(' + ') : 'Uncategorized';
+}
+
+function renderPlanList() {
+    const container = document.getElementById('plan-list');
+    const plans = getPlans();
+    const exercises = getExercises();
+    if (plans.length === 0) {
+        container.innerHTML = '<p class="no-data">No saved plans yet.</p>';
+        return;
+    }
+
+    const byGroup = {};
+    plans.forEach(p => {
+        const label = planCategoryLabel(p, exercises);
+        if (!byGroup[label]) byGroup[label] = [];
+        byGroup[label].push(p);
+    });
+    const activeGroups = Object.keys(byGroup);
+
+    if (activeGroups.length <= 1) {
+        // Everything lands in the same group so far - skip the grouping UI
+        // entirely and just show a plain list of plans.
+        container.innerHTML = plans.map(p => planCardHtml(p, exercises)).join('');
+        wirePlanListActions(container);
+        return;
+    }
+
+    if (!planListOpenGroups) planListOpenGroups = new Set(activeGroups);
+
+    container.innerHTML = activeGroups.map(g => {
+        const open = planListOpenGroups.has(g);
+        return `
+        <div class="category-block">
+            <div class="category-header" data-plan-group="${escapeHtml(g)}">
+                <span class="category-header-title">${escapeHtml(g)} (${byGroup[g].length})</span>
+            </div>
+            <div class="category-body ${open ? 'open' : ''}">
+                ${byGroup[g].map(p => planCardHtml(p, exercises)).join('')}
+            </div>
+        </div>`;
+    }).join('');
+
+    container.querySelectorAll('.category-header').forEach(header => {
+        header.addEventListener('click', () => {
+            const g = header.dataset.planGroup;
+            if (planListOpenGroups.has(g)) planListOpenGroups.delete(g);
+            else planListOpenGroups.add(g);
+            renderPlanList();
+        });
+    });
+    wirePlanListActions(container);
+}
+
 function copyPlan(planId) {
     const plans = getPlans();
     const original = plans.find(p => p.id === planId);
@@ -1017,7 +1106,7 @@ function openPlanEditor(planId) {
     planEditorId = plan ? plan.id : null;
     planEditorExerciseIds = plan ? [...plan.exerciseIds] : [];
 
-    document.getElementById('plan-list-view').classList.add('hidden');
+    document.getElementById('log-plan-picker').classList.add('hidden');
     document.getElementById('plan-editor').classList.remove('hidden');
     document.getElementById('plan-name-input').value = plan ? plan.name : '';
 
@@ -1079,13 +1168,17 @@ function renderPlanEditorPicker() {
 
 function closePlanEditor() {
     document.getElementById('plan-editor').classList.add('hidden');
-    document.getElementById('plan-list-view').classList.remove('hidden');
-    renderPlanList();
+    document.getElementById('log-plan-picker').classList.remove('hidden');
+    renderLogPlanPickerList();
 }
 
 function initPlanTab() {
     document.getElementById('new-plan-btn').addEventListener('click', () => openPlanEditor(null));
     document.getElementById('plan-editor-back').addEventListener('click', closePlanEditor);
+    document.getElementById('plan-manager-gear-btn').addEventListener('click', () => {
+        document.getElementById('plan-manager-panel').classList.toggle('hidden');
+        syncPlanPickerListVisibility();
+    });
 
     document.getElementById('plan-save-btn').addEventListener('click', () => {
         const name = document.getElementById('plan-name-input').value.trim();
@@ -1115,6 +1208,7 @@ function renderCategoryManager() {
     if (categories.length === 0) {
         document.getElementById('exercise-manager-panel').classList.remove('hidden');
     }
+    syncLogCategoryGridVisibility();
 
     const showWizard = categories.length === 0 && !setupSkipped;
     document.getElementById('setup-wizard').classList.toggle('hidden', !showWizard);
@@ -1126,13 +1220,17 @@ function renderCategoryManager() {
 
     const container = document.getElementById('category-manager-list');
     const exercises = getExercises();
+    const addCategoryBtnHtml = `<button type="button" class="small-btn gear-add-btn" id="add-category-btn">+ Add Category</button>`;
 
     if (categories.length === 0) {
-        container.innerHTML = '<p class="no-data">No categories yet. Use the + New Category tile above to add one.</p>';
+        container.innerHTML = addCategoryBtnHtml + '<p class="no-data">No categories yet. Use + Add Category above.</p>';
+        document.getElementById('add-category-btn').addEventListener('click', () => {
+            addCategoryFromPrompt(prompt('New category name:'));
+        });
         return;
     }
 
-    container.innerHTML = categories.map(cat => {
+    container.innerHTML = addCategoryBtnHtml + categories.map(cat => {
         const exList = exercises.filter(e => e.category === cat);
         const open = openCategoryBlocks.has(cat);
         return `
@@ -1155,11 +1253,14 @@ function renderCategoryManager() {
                             </select>
                         </span>
                     </div>
-                `).join('') || '<p class="no-data">No exercises yet. Open the category and use + New Exercise.</p>'}
+                `).join('') || '<p class="no-data">No exercises yet. Open the category to add one.</p>'}
             </div>
         </div>`;
     }).join('');
 
+    document.getElementById('add-category-btn').addEventListener('click', () => {
+        addCategoryFromPrompt(prompt('New category name:'));
+    });
     container.querySelectorAll('.category-header').forEach(header => {
         header.addEventListener('click', (e) => {
             if (e.target.tagName === 'BUTTON') return;
@@ -1291,14 +1392,17 @@ function deleteCategory(cat) {
 function refreshCategoryDependents() {
     renderLogCategoryStep();
     if (logCurrentCategory) renderLogExerciseStepContent(logCurrentCategory);
+    renderPlanList();
 }
 
 function initExerciseManagerPanels() {
     document.getElementById('exercise-manager-gear-btn').addEventListener('click', () => {
         document.getElementById('exercise-manager-panel').classList.toggle('hidden');
+        syncLogCategoryGridVisibility();
     });
     document.getElementById('exercise-list-gear-btn').addEventListener('click', () => {
         document.getElementById('exercise-list-manager-panel').classList.toggle('hidden');
+        syncLogExerciseGridVisibility();
     });
 
     initSetupWizard();
@@ -1491,23 +1595,51 @@ function renderBodyweightList() {
 }
 
 function initBodyTab() {
-    document.getElementById('bw-date').value = todayStr();
+    document.getElementById('body-log-date').value = todayStr();
 
-    document.getElementById('bodyweight-form').addEventListener('submit', e => {
+    document.getElementById('body-log-form').addEventListener('submit', e => {
         e.preventDefault();
-        const date = document.getElementById('bw-date').value;
-        const weight = parseFloat(document.getElementById('bw-weight').value);
-        if (!date || isNaN(weight)) { alert('Please enter a date and weight.'); return; }
+        const date = document.getElementById('body-log-date').value;
+        const weightVal = document.getElementById('bw-weight').value;
+        const caloriesVal = document.getElementById('nutrition-calories').value;
+        const proteinVal = document.getElementById('nutrition-protein').value;
+        const fatVal = document.getElementById('nutrition-fat').value;
+        const carbsVal = document.getElementById('nutrition-carbs').value;
 
-        const entries = getBodyweight();
-        entries.push({ id: Date.now(), date, weight, comment: null });
-        saveBodyweight(entries);
+        if (!date) { alert('Please choose a date.'); return; }
+        if (!weightVal && !caloriesVal && !proteinVal && !fatVal && !carbsVal) {
+            alert('Enter at least one value to log.');
+            return;
+        }
+
+        if (weightVal) {
+            const entries = getBodyweight();
+            entries.push({ id: Date.now(), date, weight: parseFloat(weightVal), comment: null });
+            saveBodyweight(entries);
+        }
+
+        if (caloriesVal || proteinVal || fatVal || carbsVal) {
+            const entries = getNutrition();
+            entries.push({
+                id: Date.now() + 1,
+                date,
+                calories: caloriesVal ? parseFloat(caloriesVal) : null,
+                protein: proteinVal ? parseFloat(proteinVal) : null,
+                fat: fatVal ? parseFloat(fatVal) : null,
+                carbs: carbsVal ? parseFloat(carbsVal) : null,
+            });
+            saveNutrition(entries);
+        }
 
         document.getElementById('bw-weight').value = '';
-        renderBodyweightList();
-    });
+        document.getElementById('nutrition-calories').value = '';
+        document.getElementById('nutrition-protein').value = '';
+        document.getElementById('nutrition-fat').value = '';
+        document.getElementById('nutrition-carbs').value = '';
 
-    initNutritionForm();
+        renderBodyweightList();
+        renderNutritionList();
+    });
 }
 
 function renderNutritionList() {
@@ -1545,40 +1677,6 @@ function renderNutritionList() {
             saveNutrition(getNutrition().filter(e => e.id != btn.dataset.id));
             renderNutritionList();
         });
-    });
-}
-
-function initNutritionForm() {
-    document.getElementById('nutrition-date').value = todayStr();
-
-    document.getElementById('nutrition-form').addEventListener('submit', e => {
-        e.preventDefault();
-        const date = document.getElementById('nutrition-date').value;
-        const caloriesVal = document.getElementById('nutrition-calories').value;
-        const proteinVal = document.getElementById('nutrition-protein').value;
-        const fatVal = document.getElementById('nutrition-fat').value;
-        const carbsVal = document.getElementById('nutrition-carbs').value;
-        if (!date || (!caloriesVal && !proteinVal && !fatVal && !carbsVal)) {
-            alert('Please enter a date and at least one of calories, protein, fat, or carbs.');
-            return;
-        }
-
-        const entries = getNutrition();
-        entries.push({
-            id: Date.now(),
-            date,
-            calories: caloriesVal ? parseFloat(caloriesVal) : null,
-            protein: proteinVal ? parseFloat(proteinVal) : null,
-            fat: fatVal ? parseFloat(fatVal) : null,
-            carbs: carbsVal ? parseFloat(carbsVal) : null,
-        });
-        saveNutrition(entries);
-
-        document.getElementById('nutrition-calories').value = '';
-        document.getElementById('nutrition-protein').value = '';
-        document.getElementById('nutrition-fat').value = '';
-        document.getElementById('nutrition-carbs').value = '';
-        renderNutritionList();
     });
 }
 

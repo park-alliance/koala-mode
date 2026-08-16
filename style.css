@@ -165,11 +165,9 @@ header .link-btn {
     margin-bottom: 16px;
 }
 
-.grid-btn.add-tile {
-    border-style: dashed;
-    color: var(--muted);
-    background: transparent;
-    box-shadow: none;
+.gear-add-btn {
+    display: block;
+    margin-bottom: 12px;
 }
 
 .gear-btn {
@@ -343,6 +341,11 @@ h3 {
     transition: opacity 0.15s ease;
 }
 
+#new-plan-btn {
+    display: block;
+    margin-bottom: 14px;
+}
+
 .primary-btn:active {
     opacity: 0.85;
 }
@@ -397,6 +400,22 @@ form {
     .form-row-3 {
         grid-template-columns: 1fr;
     }
+}
+
+.form-row-5 {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 6px;
+    align-items: end;
+}
+
+.form-row-5 label {
+    font-size: 11px;
+}
+
+.form-row-5 input {
+    padding: 8px 6px;
+    font-size: 14px;
 }
 
 .log-submit-row {

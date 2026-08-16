@@ -50,8 +50,7 @@
 
         <nav id="tab-nav">
             <button class="tab-btn active" data-tab="log">Log</button>
-            <button class="tab-btn" data-tab="plan">Plan Workout</button>
-            <button class="tab-btn" data-tab="body">Weight</button>
+            <button class="tab-btn" data-tab="body">Weight &amp; Nutrition</button>
             <button class="tab-btn" data-tab="review">Daily Review</button>
         </nav>
     </div>
@@ -71,8 +70,29 @@
 
             <div id="log-plan-picker" class="hidden">
                 <button class="back-btn" id="log-plan-picker-back">&larr; Cancel</button>
-                <h2>Choose a plan</h2>
+                <div class="log-directly-header-row">
+                    <h2>Choose a plan</h2>
+                    <button type="button" class="gear-btn" id="plan-manager-gear-btn" aria-label="Manage plans" title="Manage plans">⚙️</button>
+                </div>
+                <div id="plan-manager-panel" class="hidden">
+                    <button type="button" class="small-btn gear-add-btn" id="new-plan-btn">+ New Plan</button>
+                    <div id="plan-list"></div>
+                </div>
                 <div id="log-plan-picker-list"></div>
+            </div>
+
+            <div id="plan-editor" class="hidden">
+                <button class="back-btn" id="plan-editor-back">&larr; Plans</button>
+                <div class="form-row">
+                    <label>Plan name
+                        <input type="text" id="plan-name-input" placeholder="e.g. Push Day">
+                    </label>
+                </div>
+                <h3>Exercises in this plan</h3>
+                <div id="plan-editor-exercise-list"></div>
+                <button type="button" class="primary-btn" id="plan-save-btn">Save Plan</button>
+                <h3>Add exercise</h3>
+                <div id="plan-editor-picker"></div>
             </div>
 
             <div id="log-session-view" class="hidden">
@@ -204,64 +224,24 @@
             </div>
         </section>
 
-        <!-- PLAN WORKOUT TAB -->
-        <section id="tab-plan" class="tab-panel">
-            <div id="plan-list-view">
-                <h2>Workout Plans</h2>
-                <button type="button" class="primary-btn" id="new-plan-btn">+ New Plan</button>
-                <div id="plan-list"></div>
-            </div>
-
-            <div id="plan-editor" class="hidden">
-                <button class="back-btn" id="plan-editor-back">&larr; Plans</button>
-                <div class="form-row">
-                    <label>Plan name
-                        <input type="text" id="plan-name-input" placeholder="e.g. Push Day">
-                    </label>
-                </div>
-                <h3>Exercises in this plan</h3>
-                <div id="plan-editor-exercise-list"></div>
-                <button type="button" class="primary-btn" id="plan-save-btn">Save Plan</button>
-                <h3>Add exercise</h3>
-                <div id="plan-editor-picker"></div>
-            </div>
-        </section>
-
         <!-- BODY & NOTES TAB -->
         <section id="tab-body" class="tab-panel">
-            <h2>Weight</h2>
-            <form id="bodyweight-form" class="form-row form-row-3">
+            <h2>Weight &amp; Nutrition</h2>
+            <form id="body-log-form">
                 <div class="date-row">
-                    <label for="bw-date">Date</label>
-                    <input type="date" id="bw-date" class="date-compact" required>
+                    <label for="body-log-date">Date</label>
+                    <input type="date" id="body-log-date" class="date-compact" required>
                 </div>
-                <label>Weight (lb)
-                    <input type="number" id="bw-weight" step="0.1" inputmode="decimal" placeholder="180" required>
-                </label>
-                <button type="submit" class="primary-btn">Log Weight</button>
-            </form>
-            <div class="view-toggle hidden" id="bw-history-toggle">
-                <button type="button" class="bg-option selected" data-view="list">List</button>
-                <button type="button" class="bg-option" data-view="plot">Plot</button>
-            </div>
-            <div id="bodyweight-list"></div>
-            <div id="bodyweight-chart" class="hidden"></div>
-
-            <h2>Nutrition</h2>
-            <form id="nutrition-form">
-                <div class="date-row">
-                    <label for="nutrition-date">Date</label>
-                    <input type="date" id="nutrition-date" class="date-compact" required>
-                </div>
-                <div class="form-row form-row-2">
+                <div class="form-row form-row-5">
+                    <label>Weight (lb)
+                        <input type="number" id="bw-weight" step="0.1" inputmode="decimal" placeholder="180">
+                    </label>
                     <label>Calories
                         <input type="number" id="nutrition-calories" step="1" inputmode="numeric" placeholder="2200">
                     </label>
                     <label>Protein (g)
                         <input type="number" id="nutrition-protein" step="1" inputmode="numeric" placeholder="180">
                     </label>
-                </div>
-                <div class="form-row form-row-2">
                     <label>Fat (g)
                         <input type="number" id="nutrition-fat" step="1" inputmode="numeric" placeholder="70">
                     </label>
@@ -269,8 +249,18 @@
                         <input type="number" id="nutrition-carbs" step="1" inputmode="numeric" placeholder="220">
                     </label>
                 </div>
-                <button type="submit" class="primary-btn">Log Nutrition</button>
+                <button type="submit" class="primary-btn">Log</button>
             </form>
+
+            <h3>Weight</h3>
+            <div class="view-toggle hidden" id="bw-history-toggle">
+                <button type="button" class="bg-option selected" data-view="list">List</button>
+                <button type="button" class="bg-option" data-view="plot">Plot</button>
+            </div>
+            <div id="bodyweight-list"></div>
+            <div id="bodyweight-chart" class="hidden"></div>
+
+            <h3>Nutrition</h3>
             <div id="nutrition-list"></div>
         </section>
 
