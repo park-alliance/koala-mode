@@ -200,7 +200,8 @@
                     <input type="text" id="log-comment" placeholder="Comment (optional)" class="hidden">
                     <div class="form-row log-submit-row">
                         <div class="date-row" id="log-date-row">
-                            <input type="date" id="log-date" class="date-compact" required>
+                            <button type="button" class="icon-btn date-picker-btn" id="log-date-btn" aria-label="Change date" title="Change date"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+                            <input type="date" id="log-date" class="visually-hidden-date" required>
                         </div>
                         <button type="button" class="link-btn" id="log-comment-toggle">+ Note</button>
                         <span class="pr-burst-wrap">
@@ -225,7 +226,8 @@
 
                 <form id="log-cardio-form" class="hidden">
                     <div class="date-row" id="cardio-date-row">
-                        <input type="date" id="cardio-date" class="date-compact" required>
+                        <button type="button" class="icon-btn date-picker-btn" id="cardio-date-btn" aria-label="Change date" title="Change date"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+                        <input type="date" id="cardio-date" class="visually-hidden-date" required>
                     </div>
                     <div class="form-row form-row-3">
                         <label>Total Time (min)
@@ -268,7 +270,7 @@
                     <button type="button" class="bg-option icon-only-option" data-view="history" aria-label="Graph" title="Graph"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></button>
                 </div>
                 <form id="log-weight-form" class="header-weight-log">
-                    <button type="button" class="icon-btn" id="bw-date-btn" aria-label="Change date" title="Change date"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+                    <button type="button" class="icon-btn date-picker-btn" id="bw-date-btn" aria-label="Change date" title="Change date"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
                     <input type="date" id="bw-date" class="visually-hidden-date" required>
                     <input type="number" id="bw-weight" step="0.1" inputmode="decimal" placeholder="Weight" class="header-weight-input">
                     <button type="submit" class="primary-btn header-weight-btn">Log</button>
@@ -303,7 +305,8 @@
                     </div>
                     <div class="form-row log-submit-row">
                         <div class="date-row">
-                            <input type="date" id="nutrition-date" class="date-compact" required>
+                            <button type="button" class="icon-btn date-picker-btn" id="nutrition-date-btn" aria-label="Change date" title="Change date"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+                            <input type="date" id="nutrition-date" class="visually-hidden-date" required>
                         </div>
                         <button type="submit" class="primary-btn">Log Nutrition</button>
                     </div>
@@ -353,7 +356,8 @@
                 </div>
                 <div class="form-row log-submit-row">
                     <div class="date-row">
-                        <input type="date" id="review-date" class="date-compact" required>
+                        <button type="button" class="icon-btn date-picker-btn" id="review-date-btn" aria-label="Change date" title="Change date"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></button>
+                        <input type="date" id="review-date" class="visually-hidden-date" required>
                     </div>
                     <button type="submit" class="primary-btn">Save Review</button>
                 </div>

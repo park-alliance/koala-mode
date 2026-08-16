@@ -1958,12 +1958,6 @@ function initBodyTab() {
     initNutritionMealPicker();
     initNutritionGoalsInlineEdit();
 
-    document.getElementById('bw-date-btn').addEventListener('click', () => {
-        const dateInput = document.getElementById('bw-date');
-        if (dateInput.showPicker) dateInput.showPicker();
-        else dateInput.focus();
-    });
-
     document.getElementById('log-weight-form').addEventListener('submit', e => {
         e.preventDefault();
         const date = document.getElementById('bw-date').value;
@@ -2600,6 +2594,21 @@ function renderEverything() {
     refreshReviewView();
 }
 
+// Every date input in the app is visually hidden (.visually-hidden-date) in
+// favor of a calendar-icon button (.date-picker-btn) that opens the native
+// picker directly - no visible "MM/DD/YYYY" field anywhere. Each button is
+// immediately followed by its date input in the markup, so one delegated
+// pass wires all of them instead of a per-form listener.
+function initDatePickerButtons() {
+    document.querySelectorAll('.date-picker-btn').forEach(btn => {
+        const input = btn.nextElementSibling;
+        btn.addEventListener('click', () => {
+            if (input.showPicker) input.showPicker();
+            else input.focus();
+        });
+    });
+}
+
 document.addEventListener('DOMContentLoaded', () => {
     initTabs();
     initRestTimer();
@@ -2610,6 +2619,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initExerciseManagerPanels();
     initBodyTab();
     initReviewTab();
+    initDatePickerButtons();
     initAuthUI();
 
     if ('serviceWorker' in navigator) {
