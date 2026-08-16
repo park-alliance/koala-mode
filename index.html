@@ -56,9 +56,26 @@
                 <button class="primary-btn" id="start-planned-btn">&#9654; Start/Plan Workout</button>
                 <div id="rest-timer">
                     <span id="rest-timer-label" aria-label="Rest timer" title="Rest timer"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></span>
-                    <input type="text" id="rest-timer-display" value="2:00" inputmode="numeric">
+                    <button type="button" id="rest-timer-display" title="Set rest timer">2:00</button>
                     <button type="button" class="small-btn" id="rest-timer-toggle" title="Start"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg></button>
                     <button type="button" class="small-btn" id="rest-timer-reset" title="Reset">&#8635;</button>
+                </div>
+            </div>
+
+            <div id="rest-timer-picker-overlay" class="modal-overlay hidden">
+                <div class="modal-card">
+                    <h3>Set Rest Timer</h3>
+                    <div class="wheel-picker-row">
+                        <div class="wheel-picker-highlight"></div>
+                        <div class="wheel-picker" id="rest-timer-minutes-wheel"></div>
+                        <div class="wheel-picker-unit">min</div>
+                        <div class="wheel-picker" id="rest-timer-seconds-wheel"></div>
+                        <div class="wheel-picker-unit">sec</div>
+                    </div>
+                    <div class="modal-actions">
+                        <button type="button" class="link-btn" id="rest-timer-picker-cancel">Cancel</button>
+                        <button type="button" class="primary-btn" id="rest-timer-picker-done">Done</button>
+                    </div>
                 </div>
             </div>
 

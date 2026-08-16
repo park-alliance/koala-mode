@@ -2136,23 +2136,8 @@ function formatRestTimer(seconds) {
     return `${m}:${String(s).padStart(2, '0')}`;
 }
 
-function parseRestTimerInput(text) {
-    const trimmed = text.trim();
-    if (!trimmed) return null;
-    if (trimmed.includes(':')) {
-        const [m, s] = trimmed.split(':').map(Number);
-        if (Number.isNaN(m) || Number.isNaN(s)) return null;
-        return Math.max(0, Math.round(m * 60 + s));
-    }
-    const n = Number(trimmed);
-    if (Number.isNaN(n)) return null;
-    return Math.max(0, Math.round(n * 60));
-}
-
 function updateRestTimerDisplay() {
-    const input = document.getElementById('rest-timer-display');
-    input.value = formatRestTimer(restTimerRemaining);
-    input.readOnly = !!restTimerInterval;
+    document.getElementById('rest-timer-display').textContent = formatRestTimer(restTimerRemaining);
     document.getElementById('rest-timer').classList.toggle('done', restTimerRemaining === 0 && !restTimerInterval);
 }
 
@@ -2191,24 +2176,71 @@ function resetRestTimer() {
     updateRestTimerDisplay();
 }
 
-function applyRestTimerEdit() {
-    const input = document.getElementById('rest-timer-display');
-    const parsed = parseRestTimerInput(input.value);
-    if (parsed !== null && parsed > 0) {
-        restTimerDefault = parsed;
-        restTimerRemaining = parsed;
+// ============ REST TIMER PICKER (scroll wheels, like a classic timer app) ============
+// No typing involved (mobile numeric keypads often can't enter ":" or "."
+// anyway) - just two scroll-snap wheels read by scroll position on "Done".
+
+const REST_TIMER_WHEEL_ITEM_HEIGHT = 36;
+const REST_TIMER_MAX_MINUTES = 30;
+
+function buildRestTimerWheel(id, max) {
+    const wheel = document.getElementById(id);
+    let html = '';
+    for (let i = 0; i <= max; i++) {
+        html += `<div class="wheel-picker-item">${String(i).padStart(2, '0')}</div>`;
+    }
+    wheel.innerHTML = html;
+}
+
+function scrollRestTimerWheelTo(id, value) {
+    document.getElementById(id).scrollTop = value * REST_TIMER_WHEEL_ITEM_HEIGHT;
+}
+
+function readRestTimerWheel(id) {
+    const wheel = document.getElementById(id);
+    return Math.round(wheel.scrollTop / REST_TIMER_WHEEL_ITEM_HEIGHT);
+}
+
+function openRestTimerPicker() {
+    if (restTimerInterval) return;
+    const mins = Math.floor(restTimerRemaining / 60);
+    const secs = restTimerRemaining % 60;
+    document.getElementById('rest-timer-picker-overlay').classList.remove('hidden');
+    // Set scroll position after the overlay is visible, so its layout exists.
+    requestAnimationFrame(() => {
+        scrollRestTimerWheelTo('rest-timer-minutes-wheel', mins);
+        scrollRestTimerWheelTo('rest-timer-seconds-wheel', secs);
+    });
+}
+
+function closeRestTimerPicker() {
+    document.getElementById('rest-timer-picker-overlay').classList.add('hidden');
+}
+
+function applyRestTimerPicker() {
+    const mins = readRestTimerWheel('rest-timer-minutes-wheel');
+    const secs = readRestTimerWheel('rest-timer-seconds-wheel');
+    const total = mins * 60 + secs;
+    if (total > 0) {
+        restTimerDefault = total;
+        restTimerRemaining = total;
     }
     updateRestTimerDisplay();
+    closeRestTimerPicker();
 }
 
 function initRestTimer() {
     updateRestTimerDisplay();
-    const input = document.getElementById('rest-timer-display');
-    input.addEventListener('focus', () => input.select());
-    input.addEventListener('blur', applyRestTimerEdit);
-    input.addEventListener('keydown', e => {
-        if (e.key === 'Enter') input.blur();
+    buildRestTimerWheel('rest-timer-minutes-wheel', REST_TIMER_MAX_MINUTES);
+    buildRestTimerWheel('rest-timer-seconds-wheel', 59);
+
+    document.getElementById('rest-timer-display').addEventListener('click', openRestTimerPicker);
+    document.getElementById('rest-timer-picker-done').addEventListener('click', applyRestTimerPicker);
+    document.getElementById('rest-timer-picker-cancel').addEventListener('click', closeRestTimerPicker);
+    document.getElementById('rest-timer-picker-overlay').addEventListener('click', e => {
+        if (e.target.id === 'rest-timer-picker-overlay') closeRestTimerPicker();
     });
+
     document.getElementById('rest-timer-toggle').addEventListener('click', () => {
         if (restTimerInterval) pauseRestTimer();
         else startRestTimer();
