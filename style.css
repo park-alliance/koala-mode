@@ -147,7 +147,13 @@ header .link-btn {
     margin: 10px 0 16px;
 }
 
-.review-header-row,
+.review-header-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
 .log-directly-header-row {
     display: flex;
     justify-content: space-between;
@@ -155,7 +161,6 @@ header .link-btn {
     margin-bottom: 12px;
 }
 
-.review-header-row h2,
 .log-directly-header-row h2 {
     margin: 0;
 }
@@ -183,7 +188,7 @@ header .link-btn {
     border-radius: 8px;
     width: 36px;
     height: 36px;
-    font-size: 16px;
+    color: var(--muted);
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -205,9 +210,15 @@ header .link-btn {
 }
 
 #tab-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
     display: flex;
     background: var(--card-bg);
-    border-bottom: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 #rest-timer {
@@ -225,12 +236,9 @@ header .link-btn {
 }
 
 #rest-timer-label {
-    font-size: 11px;
-    font-weight: 600;
+    display: flex;
+    align-items: center;
     color: var(--muted);
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    white-space: nowrap;
 }
 
 #rest-timer-display {
@@ -260,25 +268,38 @@ header .link-btn {
 
 .tab-btn {
     flex: 1;
-    padding: 14px 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 4px 6px;
     border: none;
     background: none;
-    font-size: 15px;
+    font-size: 11px;
     color: var(--muted);
     cursor: pointer;
-    border-bottom: 3px solid transparent;
 }
 
 .tab-btn.active {
     color: var(--accent);
-    border-bottom-color: var(--accent);
     font-weight: bold;
+}
+
+.tab-btn-icon {
+    display: flex;
+}
+
+.tab-btn-label {
+    line-height: 1.15;
+    text-align: center;
 }
 
 main {
     max-width: 600px;
     margin: 0 auto;
     padding: 16px;
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 
 .tab-panel {
@@ -346,6 +367,12 @@ h3 {
     font-weight: 600;
     cursor: pointer;
     transition: opacity 0.15s ease;
+}
+
+.primary-btn-solid {
+    background: var(--accent);
+    color: var(--accent-text);
+    border-color: var(--accent);
 }
 
 #new-plan-btn {
@@ -661,6 +688,10 @@ input, select {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+}
+
+#plan-filter-chips {
+    margin-bottom: 12px;
 }
 
 .bg-option {

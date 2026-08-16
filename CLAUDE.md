@@ -62,34 +62,42 @@ Important behaviors:
 
 ## Features (as of last update)
 
-Only 3 nav tabs: Log, Weight & Nutrition, Daily Review. Both exercise/category
-management and plan management were folded into the Log tab behind gear icons
-rather than living on their own tabs - the pattern throughout is: a plain
-view for normal use, plus a gear icon that reveals a management panel (add/
-rename/delete/move) and hides the plain view while open.
+Only 3 nav tabs, shown as an iOS-style bottom tab bar (fixed, `position:
+fixed; bottom:0`, `env(safe-area-inset-bottom)` padding for the home
+indicator - viewport meta tag has `viewport-fit=cover` for this to work):
+Workout Log, Weight & Nutrition, Daily Review. Exercise/category management
+and plan management were folded into the Log tab rather than living on
+their own tabs.
 
 - Session-based workout logging: start a session, log sets (weight/reps),
   finish/save; weight field pre-fills from the exercise's most recent logged
   set
-- Exercise/category management lives on the Log tab: a gear icon next to
-  "Log Directly" manages categories (add/rename/delete/move exercises
-  between categories), and a gear icon on a category's exercise list manages
-  that category's exercises (add/rename/delete). First-run setup wizard
-  (exercise templates by muscle group) auto-shows there when a user has zero
-  categories.
-- Plans: saved/planned workouts, managed the same way from the "Start / Plan
-  a Workout" picker screen - a gear icon there reveals add/edit/copy/delete
-  for existing plans; picking "New"/"Edit" opens the full plan editor as its
-  own screen. Plans are auto-grouped in the manager by the categories of the
-  exercises they contain (e.g. a plan mixing Push and Legs exercises groups
-  under "Push + Legs") - see `planCategoryLabel()` in `app.js`. Nothing is
-  stored for this; it's computed live so it can't go stale.
-- Rest timer sits inline next to "Start / Plan a Workout" when idle, or next
-  to "Exit planned workout" + the plan name during an active session.
-- Weight & Nutrition tab: one combined form (shared date, Weight/Calories/
-  Protein/Fat/Carbs in a single row) logs a bodyweight entry and/or a
-  nutrition entry together; history for each stays in its own section below
-  (nutrition as a Date/Cal/Protein/Fat/Carbs table).
+- Exercise/category management lives on the Log tab: "+ New Category" /
+  "+ New Exercise" ghost tiles are always visible in the plain grids (no
+  gear needed to add). A gear icon next to "Log Directly" additionally
+  reveals a management panel for rename/delete/move-between-categories
+  (hides the plain grid while open), and a gear icon on a category's
+  exercise list does the same for rename/delete of that category's
+  exercises. First-run setup wizard (exercise templates by muscle group)
+  auto-shows there when a user has zero categories.
+- Plans: saved/planned workouts, managed from the "Start / Plan a Workout"
+  picker screen - always-visible "+ New Plan" button, a row of toggleable
+  category filter chips that live-filter the list (OR match: a plan shows
+  if any of its exercises are in a selected category), and Start/Edit/Copy/
+  Delete per plan. Plans are auto-grouped by the categories of the exercises
+  they contain (e.g. a plan mixing Push and Legs exercises groups under
+  "Push + Legs") - see `planCategoryLabel()` in `app.js`. Nothing is stored
+  for this; it's computed live so it can't go stale. Picking "New"/"Edit"
+  opens the full plan editor as its own screen.
+- Rest timer sits inline next to "Start/Plan Workout" when idle, or next to
+  "Exit planned workout" + the plan name during an active session.
+- Weight & Nutrition tab: one shared date field, then two independent log
+  actions below it - Weight has its own "Log Weight" button (solid-accent
+  styled so it stands out), the four macros (Calories/Protein/Fat/Carbs) in
+  a 1x4 row share one "Log Nutrition" button. The two groups are visually
+  distinguished by background tint, not separate headers. History for each
+  stays in its own section below (nutrition as a Date/Cal/Protein/Fat/Carbs
+  table).
 - Daily Review: customizable questions (activity, workout quality by
   default) — see `DEFAULT_REVIEW_QUESTIONS` in `app.js`
 - Offline support via service worker (network-first)
@@ -97,5 +105,8 @@ rename/delete/move) and hides the plain view while open.
 ## Style
 
 - Grayscale-ish base with purple accent (`#6c5ce7` theme color)
+- Icons are inline monochrome SVGs (`stroke="currentColor"`, no fill),
+  matching the gear-icon path already used for session-row options - not
+  emoji, kept flat/silhouette style throughout
 - No build tooling — edit `app.js`/`style.css`/`index.html` directly and
   reload

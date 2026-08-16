@@ -753,36 +753,9 @@ function initCardioForm() {
 let activeSession = null;
 let sessionPickerMode = null; // 'swap' | 'add'
 
-function syncPlanPickerListVisibility() {
-    const panelOpen = !document.getElementById('plan-manager-panel').classList.contains('hidden');
-    document.getElementById('log-plan-picker-list').classList.toggle('hidden', panelOpen);
-}
-
 function renderLogPlanPickerList() {
-    const container = document.getElementById('log-plan-picker-list');
-    const plans = getPlans();
-    const exercises = getExercises();
-
-    // Brand-new users (zero plans) always see the manager panel, regardless of
-    // the gear toggle, so + New Plan is never hidden behind a click.
-    if (plans.length === 0) {
-        document.getElementById('plan-manager-panel').classList.remove('hidden');
-    }
-
-    container.innerHTML = plans.map(p => {
-        const names = p.exerciseIds.map(id => {
-            const ex = exercises.find(e => e.id === id);
-            return ex ? ex.name : '(deleted exercise)';
-        }).join(', ');
-        return `<button type="button" class="grid-btn" data-id="${p.id}" style="display:block;width:100%;text-align:left;margin-bottom:8px;">${escapeHtml(p.name)}<br><span class="card-sub">${escapeHtml(names)}</span></button>`;
-    }).join('') || '<p class="no-data">No saved plans yet. Tap &#9881; to create one.</p>';
-
-    container.querySelectorAll('.grid-btn').forEach(btn => {
-        btn.addEventListener('click', () => startSessionFromPlan(btn.dataset.id));
-    });
-
+    renderPlanFilterChips();
     renderPlanList();
-    syncPlanPickerListVisibility();
 }
 
 function startSessionFromPlan(planId) {
@@ -1046,12 +1019,57 @@ function planCategoryLabel(plan, exercises) {
     return cats.length ? cats.join(' + ') : 'Uncategorized';
 }
 
+// Live filter for the plan picker: which categories are toggled on. Empty
+// set means no filter - show everything. A plan matches if any of its
+// exercises belong to a selected category (OR, not AND).
+let planFilterCategories = new Set();
+
+function planMatchesFilter(plan, exercises) {
+    if (planFilterCategories.size === 0) return true;
+    return plan.exerciseIds.some(id => {
+        const ex = exercises.find(e => e.id === id);
+        return ex && planFilterCategories.has(ex.category);
+    });
+}
+
+function renderPlanFilterChips() {
+    const container = document.getElementById('plan-filter-chips');
+    const categories = getCategories();
+    // Drop any selected filter for a category that no longer exists (renamed/deleted).
+    [...planFilterCategories].forEach(cat => {
+        if (!categories.includes(cat)) planFilterCategories.delete(cat);
+    });
+    if (categories.length === 0) {
+        container.innerHTML = '';
+        return;
+    }
+    container.innerHTML = categories.map(cat =>
+        `<button type="button" class="bg-option${planFilterCategories.has(cat) ? ' selected' : ''}" data-cat="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`
+    ).join('');
+    container.querySelectorAll('.bg-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const cat = btn.dataset.cat;
+            if (planFilterCategories.has(cat)) planFilterCategories.delete(cat);
+            else planFilterCategories.add(cat);
+            planListOpenGroups = null;
+            renderPlanFilterChips();
+            renderPlanList();
+        });
+    });
+}
+
 function renderPlanList() {
     const container = document.getElementById('plan-list');
-    const plans = getPlans();
+    const allPlans = getPlans();
     const exercises = getExercises();
+    if (allPlans.length === 0) {
+        container.innerHTML = '<p class="no-data">No saved plans yet. Tap + New Plan above.</p>';
+        return;
+    }
+
+    const plans = allPlans.filter(p => planMatchesFilter(p, exercises));
     if (plans.length === 0) {
-        container.innerHTML = '<p class="no-data">No saved plans yet.</p>';
+        container.innerHTML = '<p class="no-data">No plans match the selected filter.</p>';
         return;
     }
 
@@ -1182,10 +1200,6 @@ function closePlanEditor() {
 function initPlanTab() {
     document.getElementById('new-plan-btn').addEventListener('click', () => openPlanEditor(null));
     document.getElementById('plan-editor-back').addEventListener('click', closePlanEditor);
-    document.getElementById('plan-manager-gear-btn').addEventListener('click', () => {
-        document.getElementById('plan-manager-panel').classList.toggle('hidden');
-        syncPlanPickerListVisibility();
-    });
 
     document.getElementById('plan-save-btn').addEventListener('click', () => {
         const name = document.getElementById('plan-name-input').value.trim();
@@ -1399,6 +1413,7 @@ function deleteCategory(cat) {
 function refreshCategoryDependents() {
     renderLogCategoryStep();
     if (logCurrentCategory) renderLogExerciseStepContent(logCurrentCategory);
+    renderPlanFilterChips();
     renderPlanList();
 }
 
@@ -2187,6 +2202,7 @@ function initRestTimer() {
 
 function renderEverything() {
     renderLogCategoryStep();
+    renderPlanFilterChips();
     renderPlanList();
     renderCategoryManager();
     renderBodyweightList();
