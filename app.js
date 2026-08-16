@@ -1712,6 +1712,7 @@ function initBodyViewToggle() {
             const isHistory = btn.dataset.view === 'history';
             document.getElementById('body-log-view').classList.toggle('hidden', isHistory);
             document.getElementById('body-history-view').classList.toggle('hidden', !isHistory);
+            document.getElementById('log-weight-form').classList.toggle('hidden', isHistory);
             if (isHistory) {
                 renderBodyweightChart();
                 renderNutritionChart();
