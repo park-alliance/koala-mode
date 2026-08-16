@@ -226,16 +226,22 @@
 
         <!-- BODY & NOTES TAB -->
         <section id="tab-body" class="tab-panel">
-            <h2>Weight &amp; Nutrition</h2>
-            <form id="body-log-form">
-                <div class="date-row">
-                    <label for="body-log-date">Date</label>
-                    <input type="date" id="body-log-date" class="date-compact" required>
-                </div>
-                <div class="form-row form-row-5">
+            <div class="date-row">
+                <label for="body-log-date">Date</label>
+                <input type="date" id="body-log-date" class="date-compact" required>
+            </div>
+
+            <form id="log-weight-form" class="log-group log-group-weight">
+                <div class="form-row form-row-2">
                     <label>Weight (lb)
                         <input type="number" id="bw-weight" step="0.1" inputmode="decimal" placeholder="180">
                     </label>
+                    <button type="submit" class="primary-btn">Log Weight</button>
+                </div>
+            </form>
+
+            <form id="log-nutrition-form" class="log-group log-group-nutrition">
+                <div class="form-row form-row-4">
                     <label>Calories
                         <input type="number" id="nutrition-calories" step="1" inputmode="numeric" placeholder="2200">
                     </label>
@@ -249,7 +255,7 @@
                         <input type="number" id="nutrition-carbs" step="1" inputmode="numeric" placeholder="220">
                     </label>
                 </div>
-                <button type="submit" class="primary-btn">Log</button>
+                <button type="submit" class="primary-btn">Log Nutrition</button>
             </form>
 
             <h3>Weight</h3>

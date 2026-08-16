@@ -377,10 +377,13 @@ function renderLogCategoryStep() {
     const categories = getCategories();
     container.innerHTML = categories.map(cat =>
         `<button class="grid-btn" data-cat="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`
-    ).join('') || '<p class="no-data">No categories yet. Tap &#9881; to add one.</p>';
+    ).join('') + `<button type="button" class="grid-btn add-tile" id="log-add-category-btn">+ New Category</button>`;
 
     container.querySelectorAll('.grid-btn[data-cat]').forEach(btn => {
         btn.addEventListener('click', () => selectLogCategory(btn.dataset.cat));
+    });
+    document.getElementById('log-add-category-btn').addEventListener('click', () => {
+        addCategoryFromPrompt(prompt('New category name:'));
     });
 
     syncLogCategoryGridVisibility();
@@ -407,10 +410,14 @@ function renderLogExerciseStepContent(category) {
     const exercises = getExercises().filter(e => e.category === category);
     container.innerHTML = exercises.map(ex =>
         `<button class="grid-btn" data-id="${ex.id}">${escapeHtml(ex.name)}</button>`
-    ).join('') || '<p class="no-data">No exercises yet. Tap &#9881; to add one.</p>';
+    ).join('') + `<button type="button" class="grid-btn add-tile" id="log-add-exercise-btn">+ New Exercise</button>`;
 
     container.querySelectorAll('.grid-btn[data-id]').forEach(btn => {
         btn.addEventListener('click', () => selectLogExercise(btn.dataset.id));
+    });
+    document.getElementById('log-add-exercise-btn').addEventListener('click', () => {
+        const name = prompt('New exercise name:');
+        if (name && name.trim()) addExercise(category, name.trim());
     });
 
     renderExerciseListManagerPanel(category);
@@ -1597,47 +1604,47 @@ function renderBodyweightList() {
 function initBodyTab() {
     document.getElementById('body-log-date').value = todayStr();
 
-    document.getElementById('body-log-form').addEventListener('submit', e => {
+    document.getElementById('log-weight-form').addEventListener('submit', e => {
         e.preventDefault();
         const date = document.getElementById('body-log-date').value;
         const weightVal = document.getElementById('bw-weight').value;
+        if (!date || !weightVal) { alert('Please choose a date and enter a weight.'); return; }
+
+        const entries = getBodyweight();
+        entries.push({ id: Date.now(), date, weight: parseFloat(weightVal), comment: null });
+        saveBodyweight(entries);
+
+        document.getElementById('bw-weight').value = '';
+        renderBodyweightList();
+    });
+
+    document.getElementById('log-nutrition-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const date = document.getElementById('body-log-date').value;
         const caloriesVal = document.getElementById('nutrition-calories').value;
         const proteinVal = document.getElementById('nutrition-protein').value;
         const fatVal = document.getElementById('nutrition-fat').value;
         const carbsVal = document.getElementById('nutrition-carbs').value;
-
-        if (!date) { alert('Please choose a date.'); return; }
-        if (!weightVal && !caloriesVal && !proteinVal && !fatVal && !carbsVal) {
-            alert('Enter at least one value to log.');
+        if (!date || (!caloriesVal && !proteinVal && !fatVal && !carbsVal)) {
+            alert('Please choose a date and enter at least one of calories, protein, fat, or carbs.');
             return;
         }
 
-        if (weightVal) {
-            const entries = getBodyweight();
-            entries.push({ id: Date.now(), date, weight: parseFloat(weightVal), comment: null });
-            saveBodyweight(entries);
-        }
+        const entries = getNutrition();
+        entries.push({
+            id: Date.now(),
+            date,
+            calories: caloriesVal ? parseFloat(caloriesVal) : null,
+            protein: proteinVal ? parseFloat(proteinVal) : null,
+            fat: fatVal ? parseFloat(fatVal) : null,
+            carbs: carbsVal ? parseFloat(carbsVal) : null,
+        });
+        saveNutrition(entries);
 
-        if (caloriesVal || proteinVal || fatVal || carbsVal) {
-            const entries = getNutrition();
-            entries.push({
-                id: Date.now() + 1,
-                date,
-                calories: caloriesVal ? parseFloat(caloriesVal) : null,
-                protein: proteinVal ? parseFloat(proteinVal) : null,
-                fat: fatVal ? parseFloat(fatVal) : null,
-                carbs: carbsVal ? parseFloat(carbsVal) : null,
-            });
-            saveNutrition(entries);
-        }
-
-        document.getElementById('bw-weight').value = '';
         document.getElementById('nutrition-calories').value = '';
         document.getElementById('nutrition-protein').value = '';
         document.getElementById('nutrition-fat').value = '';
         document.getElementById('nutrition-carbs').value = '';
-
-        renderBodyweightList();
         renderNutritionList();
     });
 }

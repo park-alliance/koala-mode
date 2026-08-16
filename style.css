@@ -170,6 +170,13 @@ header .link-btn {
     margin-bottom: 12px;
 }
 
+.grid-btn.add-tile {
+    border-style: dashed;
+    color: var(--muted);
+    background: transparent;
+    box-shadow: none;
+}
+
 .gear-btn {
     background: var(--card-bg);
     border: 1px solid var(--border);
@@ -230,8 +237,8 @@ header .link-btn {
     font-variant-numeric: tabular-nums;
     font-weight: 700;
     font-size: 15px;
-    width: 40px;
-    text-align: right;
+    width: 46px;
+    text-align: center;
     border: none;
     background: transparent;
     color: inherit;
@@ -402,20 +409,35 @@ form {
     }
 }
 
-.form-row-5 {
+.form-row-4 {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(4, 1fr);
     gap: 6px;
     align-items: end;
 }
 
-.form-row-5 label {
+.form-row-4 label {
     font-size: 11px;
 }
 
-.form-row-5 input {
+.form-row-4 input {
     padding: 8px 6px;
     font-size: 14px;
+}
+
+.log-group-weight {
+    background: var(--accent-tint);
+    border-color: var(--accent-tint);
+}
+
+.log-group input[type="number"]::-webkit-outer-spin-button,
+.log-group input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.log-group input[type="number"] {
+    -moz-appearance: textfield;
 }
 
 .log-submit-row {
