@@ -5,11 +5,23 @@
 // writes through to Firestore in the background.
 
 const OWNER_EMAIL = 'joseph.vanacore@gmail.com';
-const DATA_KEYS = ['categories', 'exercises', 'logs', 'bodyweight', 'nutrition', 'reviews', 'reviewQuestions', 'plans', 'activeSession', 'cardioCategory'];
+const DATA_KEYS = ['categories', 'exercises', 'logs', 'bodyweight', 'nutrition', 'reviews', 'reviewQuestions', 'plans', 'activeSession', 'cardioCategory', 'nutritionGoals', 'profile'];
 const DEFAULT_REVIEW_QUESTIONS = [
     { id: 'activity', label: 'Activity level', options: ['Not Active', 'Light', 'Moderate', 'High'] },
-    { id: 'workout', label: 'Workout', options: ['No', 'Bad', 'Average', 'Good'] },
+    { id: 'workout', label: 'Workout', options: ['Rest', 'Bad', 'Average', 'Good'] },
+    { id: 'water', label: 'Water intake', options: ['Low', 'Okay', 'Good', 'Great'] },
 ];
+// calorieTarget is a manually-set daily base goal. The Today strip adds
+// today's live estimated exercise burn (computeTodayExerciseCalories()) on
+// top of it for the actual remaining-calories budget. protein/fat/carbs are
+// plain g targets.
+const DEFAULT_NUTRITION_GOALS = { calorieTarget: 2200, protein: 150, fat: 70, carbs: 200 };
+// sex/heightIn (inches, matching the app's lb convention for weight) feed
+// computeMaintenanceCalories() - collected once in the first-run setup
+// wizard, editable afterward via the maintenance-estimate label itself
+// (see initMaintenanceProfileEdit()) since existing users never see the
+// wizard again once they have categories.
+const DEFAULT_PROFILE = { sex: null, heightIn: null };
 const DATA_DEFAULTS = {
     categories: [],
     exercises: [],
@@ -21,6 +33,8 @@ const DATA_DEFAULTS = {
     plans: [],
     activeSession: null,
     cardioCategory: 'Cardio',
+    nutritionGoals: DEFAULT_NUTRITION_GOALS,
+    profile: DEFAULT_PROFILE,
 };
 
 let currentUser = null;
@@ -32,7 +46,21 @@ function userDoc(key) {
 }
 
 function syncWrite(key, value) {
-    userDoc(key).set({ value }).catch(err => console.error(`Failed to save ${key}:`, err));
+    userDoc(key).set({ value }).catch(err => {
+        console.error(`Failed to save ${key}:`, err);
+        showToast("Couldn't save - check your connection and try again.");
+    });
+}
+
+// Takes HTML (not text) so callers can include an inline icon (e.g. the PR
+// toast's trophy) - callers passing dynamic values must escapeHtml() them.
+let toastTimeout = null;
+function showToast(html) {
+    const toast = document.getElementById('toast');
+    toast.innerHTML = html;
+    toast.classList.remove('hidden');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => toast.classList.add('hidden'), 4000);
 }
 
 async function ensureSeeded() {
@@ -51,6 +79,8 @@ async function ensureSeeded() {
     batch.set(userDoc('reviewQuestions'), { value: DEFAULT_REVIEW_QUESTIONS });
     batch.set(userDoc('plans'), { value: [] });
     batch.set(userDoc('cardioCategory'), { value: 'Cardio' });
+    batch.set(userDoc('nutritionGoals'), { value: DEFAULT_NUTRITION_GOALS });
+    batch.set(userDoc('profile'), { value: DEFAULT_PROFILE });
     batch.set(seededRef, { value: true });
     await batch.commit();
 }
@@ -92,6 +122,12 @@ function saveBodyweight(v) { cloudData.bodyweight = v; syncWrite('bodyweight', v
 
 function getNutrition() { return cloudData.nutrition; }
 function saveNutrition(v) { cloudData.nutrition = v; syncWrite('nutrition', v); }
+
+function getNutritionGoals() { return cloudData.nutritionGoals; }
+function saveNutritionGoals(v) { cloudData.nutritionGoals = v; syncWrite('nutritionGoals', v); }
+
+function getProfile() { return cloudData.profile; }
+function saveProfile(v) { cloudData.profile = v; syncWrite('profile', v); }
 
 function getReviews() { return cloudData.reviews; }
 function saveReviews(v) { cloudData.reviews = v; syncWrite('reviews', v); }
@@ -153,6 +189,7 @@ function escapeHtml(str) {
 // style matching the gear/timer icons.
 const ICON_PENCIL = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
 const ICON_X = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+const ICON_TROPHY = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8"></path><path d="M12 17v4"></path><path d="M7 4h10v5a5 5 0 0 1-10 0V4z"></path><path d="M7 4H4a1 1 0 0 0-1 1v1a3 3 0 0 0 3 3h1"></path><path d="M17 4h3a1 1 0 0 1 1 1v1a3 3 0 0 1-3 3h-1"></path></svg>';
 
 // ============ TREND CHARTS (shared by exercise history and bodyweight) ============
 // Plain inline SVG, no chart library - point counts here are at most in the low
@@ -195,7 +232,7 @@ function buildTrendChartHTML(points) {
     let dotsHtml = '';
     points.forEach((p, i) => {
         const x = xFor(i), y = yFor(p.value);
-        dotsHtml += `<circle class="trend-point" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="#6c5ce7" stroke="#fff" stroke-width="1.5" data-x-pct="${(x / width * 100).toFixed(2)}" data-y-pct="${(y / height * 100).toFixed(2)}" data-label="${escapeHtml(p.label)}"></circle>`;
+        dotsHtml += `<circle class="trend-point" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="5" fill="#6c5ce7" stroke="#fff" stroke-width="1.5" data-x-pct="${(x / width * 100).toFixed(2)}" data-y-pct="${(y / height * 100).toFixed(2)}" data-label="${escapeHtml(p.label)}" data-date="${escapeHtml(p.date)}"></circle>`;
         if (p.sublabel) {
             dotsHtml += `<text x="${x.toFixed(1)}" y="${(y - 10).toFixed(1)}" font-size="9" fill="#888" text-anchor="middle">${escapeHtml(p.sublabel)}</text>`;
         }
@@ -213,19 +250,27 @@ function buildTrendChartHTML(points) {
         </div>`;
 }
 
-function wireTrendChart(containerEl) {
+// opts.tooltipHtml(date) - if given, returns HTML for the tooltip instead of
+// the plain label (used by the tap-to-manage charts below to show a
+// per-entry delete button). opts.onTooltipClick(event, tooltipEl) - if
+// given, wired as a click handler on the tooltip itself, for the delete
+// button clicks tooltipHtml renders.
+function wireTrendChart(containerEl, opts = {}) {
     const tooltip = containerEl.querySelector('.trend-tooltip');
     const svg = containerEl.querySelector('svg');
     containerEl.querySelectorAll('.trend-point').forEach(pt => {
         pt.addEventListener('click', e => {
             e.stopPropagation();
-            tooltip.textContent = pt.dataset.label;
+            tooltip.innerHTML = opts.tooltipHtml ? opts.tooltipHtml(pt.dataset.date) : escapeHtml(pt.dataset.label);
             tooltip.style.left = pt.dataset.xPct + '%';
             tooltip.style.top = pt.dataset.yPct + '%';
             tooltip.classList.add('visible');
         });
     });
     svg.addEventListener('click', () => tooltip.classList.remove('visible'));
+    if (opts.onTooltipClick) {
+        tooltip.addEventListener('click', e => opts.onTooltipClick(e, tooltip));
+    }
 }
 
 function wireViewToggle(toggleId, listEl, chartEl, points) {
@@ -522,6 +567,45 @@ function mostRecentLoggedWeight(exerciseId) {
     return logs[0] || null;
 }
 
+// ============ PERSONAL RECORDS ============
+// A set counts as a PR if it beats the heaviest weight ever logged for that
+// exercise, or matches a previously-used weight with more reps than were
+// ever logged at that exact weight before - evaluated in (date, set)
+// order against only earlier sets, so history reflects what was actually a
+// PR at the time it was logged rather than being judged against later sets.
+function computeExercisePRIds(exerciseId) {
+    const sets = getLogs()
+        .filter(l => l.exerciseId === exerciseId && l.weight != null && l.reps != null)
+        .sort((a, b) => a.date.localeCompare(b.date) || (a.set || 0) - (b.set || 0));
+
+    const prIds = new Set();
+    let maxWeightSoFar = null;
+    const maxRepsAtWeight = {};
+
+    sets.forEach(s => {
+        if (maxWeightSoFar !== null) {
+            const isWeightPR = s.weight > maxWeightSoFar;
+            const priorBestReps = maxRepsAtWeight[s.weight];
+            const isRepPR = priorBestReps !== undefined && s.reps > priorBestReps;
+            if (isWeightPR || isRepPR) prIds.add(s.id);
+        }
+        if (maxWeightSoFar === null || s.weight > maxWeightSoFar) maxWeightSoFar = s.weight;
+        maxRepsAtWeight[s.weight] = Math.max(maxRepsAtWeight[s.weight] || 0, s.reps);
+    });
+
+    return prIds;
+}
+
+// Replays the Log Set button's radiating-lines burst (#pr-burst, styled in
+// style.css) by removing then re-adding .active - forces a reflow in
+// between so the CSS animation restarts even if triggered twice in a row.
+function triggerPRBurst() {
+    const burst = document.getElementById('pr-burst');
+    burst.classList.remove('active');
+    void burst.offsetWidth;
+    burst.classList.add('active');
+}
+
 function renderLogHistory(exerciseId) {
     const container = document.getElementById('log-history-list');
     const logs = getLogs()
@@ -532,6 +616,8 @@ function renderLogHistory(exerciseId) {
         container.innerHTML = '<p class="no-data">No history yet. Log your first set above.</p>';
         return;
     }
+
+    const prIds = computeExercisePRIds(exerciseId);
 
     const byDate = {};
     logs.forEach(l => {
@@ -548,8 +634,9 @@ function renderLogHistory(exerciseId) {
             if (l.reps !== null && l.reps !== undefined && l.reps !== '') parts.push(`${l.reps} reps`);
             const main = parts.length ? parts.join(' × ') : '';
             const comment = l.comment ? ` <span class="card-sub">${escapeHtml(l.comment)}</span>` : '';
+            const prBadge = prIds.has(l.id) ? `<span class="pr-badge" title="Personal record">${ICON_TROPHY}</span>` : '';
             html += `<div class="history-set">
-                <span>Set ${l.set || '-'}: ${main}${comment}</span>
+                <span>Set ${l.set || '-'}: ${main}${prBadge}${comment}</span>
                 <button class="icon-btn danger-btn" data-id="${l.id}" title="Delete" aria-label="Delete">${ICON_X}</button>
             </div>`;
         });
@@ -627,7 +714,7 @@ function initLogTab() {
         if (!date) { alert('Please choose a date.'); return; }
 
         const logs = getLogs();
-        logs.push({
+        const newEntry = {
             id: nextLogId(),
             date,
             exerciseId: logCurrentExerciseId,
@@ -635,8 +722,14 @@ function initLogTab() {
             weight: weightVal ? parseFloat(weightVal) : null,
             reps: repsVal ? parseFloat(repsVal) : null,
             comment: comment || null,
-        });
+        };
+        logs.push(newEntry);
         saveLogs(logs);
+
+        if (computeExercisePRIds(logCurrentExerciseId).has(newEntry.id)) {
+            showToast(`${ICON_TROPHY} New PR - ${newEntry.weight} lb × ${newEntry.reps} reps`);
+            triggerPRBurst();
+        }
 
         const nextSet = (setVal ? parseInt(setVal, 10) : nextSetNumberForToday(logCurrentExerciseId, date)) + 1;
         // Weight (and reps) carry over instead of clearing - most sets of an
@@ -1560,6 +1653,34 @@ function confirmSetupWizard() {
 
     renderCategoryManager();
     refreshCategoryDependents();
+
+    // Setup wizard force-opens this panel for brand-new users (see
+    // renderCategoryManager); nothing closes it back up once they're done,
+    // which leaves the category grid they actually need to tap hidden behind
+    // it. Close it now so finishing setup drops them straight into logging.
+    document.getElementById('exercise-manager-panel').classList.add('hidden');
+    syncLogCategoryGridVisibility();
+}
+
+// Sex/height feed computeMaintenanceCalories() on the Weight & Nutrition tab
+// - captured here (optionally) since this is the one screen every brand-new
+// user sees; saved as each field changes rather than needing its own
+// confirm step, independent of the exercise-template choice below it.
+function initSetupProfileQuestion() {
+    document.querySelectorAll('#setup-profile-sex-picker .bg-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#setup-profile-sex-picker .bg-option').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            saveProfile({ ...getProfile(), sex: btn.dataset.sex });
+        });
+    });
+    const saveHeight = () => {
+        const ft = document.getElementById('setup-profile-height-ft').value;
+        const inches = document.getElementById('setup-profile-height-in').value;
+        saveProfile({ ...getProfile(), heightIn: (ft || inches) ? feetInchesToTotalInches(ft, inches) : null });
+    };
+    document.getElementById('setup-profile-height-ft').addEventListener('blur', saveHeight);
+    document.getElementById('setup-profile-height-in').addEventListener('blur', saveHeight);
 }
 
 function initSetupWizard() {
@@ -1573,40 +1694,269 @@ function initSetupWizard() {
     });
     document.querySelectorAll('.setup-confirm-btn').forEach(btn => btn.addEventListener('click', confirmSetupWizard));
     initSetupChecklistDelegation();
+    initSetupProfileQuestion();
 }
 
-// ============ BODY & NOTES TAB ============
+// ============ WEIGHT & NUTRITION TAB ============
+// Log/History are a sub-tab pair within this tab (#body-view-toggle), not
+// separate top-level tabs - Log is forms + today's goal progress, History is
+// chart-only (no list view) with tap-a-point-to-manage instead, since with
+// per-meal nutrition entries a flat list gets long fast.
 
-function renderBodyweightList() {
-    const container = document.getElementById('bodyweight-list');
-    const entries = getBodyweight().slice().sort((a, b) => b.date.localeCompare(a.date));
-    if (entries.length === 0) {
-        container.innerHTML = '<p class="no-data">No bodyweight entries yet.</p>';
-    } else {
-        container.innerHTML = entries.map(e => `
-            <div class="card card-row">
-                <div>
-                    <div class="card-title">${e.weight} lb</div>
-                    <div class="card-sub">${formatDate(e.date)}${e.comment ? ' · ' + escapeHtml(e.comment) : ''}</div>
-                </div>
-                <button class="icon-btn danger-btn" data-id="${e.id}" title="Delete" aria-label="Delete">${ICON_X}</button>
-            </div>
-        `).join('');
-        container.querySelectorAll('.danger-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                if (!confirm('Delete this entry?')) return;
-                saveBodyweight(getBodyweight().filter(e => e.id != btn.dataset.id));
-                renderBodyweightList();
-            });
+function initBodyViewToggle() {
+    const toggle = document.getElementById('body-view-toggle');
+    toggle.querySelectorAll('.bg-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+            toggle.querySelectorAll('.bg-option').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+            const isHistory = btn.dataset.view === 'history';
+            document.getElementById('body-log-view').classList.toggle('hidden', isHistory);
+            document.getElementById('body-history-view').classList.toggle('hidden', !isHistory);
+            if (isHistory) {
+                renderBodyweightChart();
+                renderNutritionChart();
+            }
         });
+    });
+}
+
+function isBodyHistoryVisible() {
+    return !document.getElementById('body-history-view').classList.contains('hidden');
+}
+
+// Tooltip content/actions for the tap-a-point charts below. Reuses the
+// existing trend-chart tooltip (buildTrendChartHTML/wireTrendChart, shared
+// with per-exercise trend charts) rather than a separate popover component.
+function tooltipDeleteRowHtml(label, id) {
+    return `
+        <div class="tooltip-row">
+            <span>${escapeHtml(label)}</span>
+            <button type="button" class="tooltip-delete-btn" data-id="${id}">${ICON_X}</button>
+        </div>`;
+}
+
+function renderBodyweightChart() {
+    const chartEl = document.getElementById('bodyweight-chart');
+    const points = computeBodyweightTrendPoints();
+    if (points.length === 0) {
+        chartEl.innerHTML = '<p class="no-data">No weight entries yet.</p>';
+        return;
+    }
+    chartEl.innerHTML = buildTrendChartHTML(points);
+    const entryByDate = {};
+    getBodyweight().forEach(e => {
+        if (!entryByDate[e.date] || e.weight > entryByDate[e.date].weight) entryByDate[e.date] = e;
+    });
+    wireTrendChart(chartEl, {
+        tooltipHtml: date => {
+            const entry = entryByDate[date];
+            if (!entry) return '';
+            return `<div class="tooltip-date-label">${escapeHtml(formatDate(date))}</div>${tooltipDeleteRowHtml(`${entry.weight} lb`, entry.id)}`;
+        },
+        onTooltipClick: (e, tooltipEl) => {
+            const btn = e.target.closest('.tooltip-delete-btn');
+            if (!btn) return;
+            e.stopPropagation();
+            if (!confirm('Delete this entry?')) return;
+            saveBodyweight(getBodyweight().filter(x => String(x.id) !== btn.dataset.id));
+            tooltipEl.classList.remove('visible');
+            renderBodyweightChart();
+        },
+    });
+}
+
+function computeNutritionCalorieTrendPoints() {
+    const byDate = {};
+    getNutrition().forEach(e => {
+        (byDate[e.date] = byDate[e.date] || []).push(e);
+    });
+    return Object.keys(byDate).sort().map(date => {
+        const entries = byDate[date];
+        const total = entries.reduce((sum, e) => sum + (e.calories || 0), 0);
+        return { date, value: total, label: `${formatDate(date)}: ${total} cal`, entries };
+    });
+}
+
+function renderNutritionChart() {
+    const chartEl = document.getElementById('nutrition-chart');
+    const points = computeNutritionCalorieTrendPoints();
+    if (points.length === 0) {
+        chartEl.innerHTML = '<p class="no-data">No nutrition entries yet.</p>';
+        return;
+    }
+    chartEl.innerHTML = buildTrendChartHTML(points);
+    const pointByDate = Object.fromEntries(points.map(p => [p.date, p]));
+    wireTrendChart(chartEl, {
+        tooltipHtml: date => {
+            const point = pointByDate[date];
+            if (!point) return '';
+            const rows = point.entries.map(e =>
+                tooltipDeleteRowHtml(`${e.meal || 'Day Total'}${e.calories != null ? `: ${e.calories} cal` : ''}`, e.id)
+            ).join('');
+            return `<div class="tooltip-date-label">${escapeHtml(formatDate(date))}</div>${rows}`;
+        },
+        onTooltipClick: (e, tooltipEl) => {
+            const btn = e.target.closest('.tooltip-delete-btn');
+            if (!btn) return;
+            e.stopPropagation();
+            if (!confirm('Delete this entry?')) return;
+            saveNutrition(getNutrition().filter(x => String(x.id) !== btn.dataset.id));
+            tooltipEl.classList.remove('visible');
+            renderNutritionChart();
+            renderNutritionToday();
+        },
+    });
+}
+
+// ============ TODAY'S NUTRITION GOALS ============
+
+// Height is entered as feet+inches (the natural US unit for a person's
+// height) but stored as a single total-inches number - simplest to do math
+// with, and avoids a two-field shape rippling through the data model.
+function feetInchesToTotalInches(ft, inches) {
+    return (parseFloat(ft) || 0) * 12 + (parseFloat(inches) || 0);
+}
+
+// Mifflin-St Jeor BMR x1.2 (light daily activity). Not shown as its own
+// metric (that read as a confusing mini-dashboard) - used once, quietly, to
+// give a new user a smarter starting calorieTarget than a flat default (see
+// renderNutritionToday's auto-baseline check below). Age isn't collected -
+// the wizard only asks sex/height to keep first-run setup short - so this
+// assumes a fixed age; the estimate is inherently rough either way.
+const MAINTENANCE_ASSUMED_AGE = 30;
+const MAINTENANCE_ACTIVITY_MULTIPLIER = 1.2;
+
+function latestBodyweightLb() {
+    const entries = getBodyweight().slice().sort((a, b) => b.date.localeCompare(a.date));
+    return entries[0] ? entries[0].weight : null;
+}
+
+function computeMaintenanceCalories() {
+    const { sex, heightIn } = getProfile();
+    const weightLb = latestBodyweightLb();
+    if (!sex || !heightIn || !weightLb) return null;
+
+    const weightKg = weightLb * 0.453592;
+    const heightCm = heightIn * 2.54;
+    const bmr = 10 * weightKg + 6.25 * heightCm - 5 * MAINTENANCE_ASSUMED_AGE + (sex === 'male' ? 5 : -161);
+    return Math.round(bmr * MAINTENANCE_ACTIVITY_MULTIPLIER);
+}
+
+let editingGoalKey = null;
+// Guards the one-time calorieTarget auto-baseline (below) against redundant
+// Firestore writes if renderNutritionToday fires again before the write's
+// onSnapshot echo lands - harmless either way since the write is idempotent,
+// this just avoids the extra round trip.
+let calorieTargetAutoBaselined = false;
+
+function nutritionGoalBarHtml(key, label, consumed, barGoal, editableValue, rightText, isOver) {
+    const pct = barGoal > 0 ? Math.min(100, (consumed / barGoal) * 100) : 0;
+    const rightHtml = editingGoalKey === key
+        ? `<input type="number" class="nutrition-goal-edit-input" id="nutrition-goal-edit-input" data-key="${key}" value="${editableValue}" inputmode="numeric" step="1" min="0">`
+        : `<span class="${isOver ? 'over-text' : ''}">${escapeHtml(rightText)}</span>`;
+    return `
+        <div class="nutrition-goal-row" data-key="${key}">
+            <div class="nutrition-goal-label"><span>${escapeHtml(label)}</span>${rightHtml}</div>
+            <div class="nutrition-goal-track"><div class="nutrition-goal-fill${isOver ? ' over' : ''}" style="width:${pct.toFixed(1)}%"></div></div>
+        </div>`;
+}
+
+function renderNutritionToday() {
+    const goals = getNutritionGoals();
+    const today = todayStr();
+    const todays = getNutrition().filter(e => e.date === today);
+    const sum = key => todays.reduce((s, e) => s + (e[key] || 0), 0);
+    const consumed = { calories: sum('calories'), protein: sum('protein'), fat: sum('fat'), carbs: sum('carbs') };
+
+    // One-time upgrade from the generic default to a profile-based estimate,
+    // the first time one becomes computable (sex/height set + a weight
+    // logged) for someone who's never touched the target themselves.
+    let calorieTarget = goals.calorieTarget;
+    if (!calorieTargetAutoBaselined && calorieTarget === DEFAULT_NUTRITION_GOALS.calorieTarget) {
+        const maintenance = computeMaintenanceCalories();
+        if (maintenance != null) {
+            calorieTargetAutoBaselined = true;
+            calorieTarget = maintenance;
+            saveNutritionGoals({ ...goals, calorieTarget: maintenance });
+        }
     }
 
-    wireViewToggle('bw-history-toggle', container, document.getElementById('bodyweight-chart'), computeBodyweightTrendPoints());
+    const calRemaining = calorieTarget - consumed.calories;
+    const calOver = calRemaining < 0;
+    const calText = calOver
+        ? `${Math.round(consumed.calories)} consumed · ${Math.round(Math.abs(calRemaining))} over`
+        : `${Math.round(consumed.calories)} consumed · ${Math.round(calRemaining)} remaining`;
+
+    const goalRow = (key, label, rightText) => {
+        const c = consumed[key], g = goals[key];
+        return nutritionGoalBarHtml(key, label, c, g, g, rightText, g > 0 && c > g);
+    };
+
+    document.getElementById('nutrition-today-bars').innerHTML = `
+        <div class="nutrition-targets-label">Targets</div>
+        ${nutritionGoalBarHtml('calorieTarget', 'Calories', consumed.calories, calorieTarget, calorieTarget, calText, calOver)}
+        ${goalRow('protein', 'Protein', `${Math.round(consumed.protein)} / ${goals.protein}g`)}
+        ${goalRow('fat', 'Fat', `${Math.round(consumed.fat)} / ${goals.fat}g`)}
+        ${goalRow('carbs', 'Carbs', `${Math.round(consumed.carbs)} / ${goals.carbs}g`)}
+    `;
+
+    if (editingGoalKey) {
+        const input = document.getElementById('nutrition-goal-edit-input');
+        input.focus();
+        input.select();
+    }
+}
+
+function commitNutritionGoalEdit(key, rawValue) {
+    saveNutritionGoals({ ...getNutritionGoals(), [key]: parseFloat(rawValue) || 0 });
+    if (editingGoalKey === key) {
+        editingGoalKey = null;
+        renderNutritionToday();
+    }
+}
+
+// Tap any target row (calories/protein/fat/carbs) to edit that value inline
+// - replaces the old single gear-panel-with-4-inputs approach.
+function initNutritionGoalsInlineEdit() {
+    const container = document.getElementById('nutrition-today-bars');
+    container.addEventListener('click', e => {
+        if (e.target.closest('.nutrition-goal-edit-input')) return;
+
+        const row = e.target.closest('.nutrition-goal-row');
+        if (!row || editingGoalKey === row.dataset.key) return;
+        editingGoalKey = row.dataset.key;
+        renderNutritionToday();
+    });
+    container.addEventListener('keydown', e => {
+        if (e.target.classList.contains('nutrition-goal-edit-input') && e.key === 'Enter') e.target.blur();
+    });
+    // blur doesn't bubble, but a capture-phase listener on an ancestor still
+    // sees it fire on the way down to the target.
+    container.addEventListener('blur', e => {
+        if (e.target.classList.contains('nutrition-goal-edit-input')) commitNutritionGoalEdit(e.target.dataset.key, e.target.value);
+    }, true);
+}
+
+function initNutritionMealPicker() {
+    document.querySelectorAll('#nutrition-meal-picker .bg-option').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('#nutrition-meal-picker .bg-option').forEach(b => b.classList.remove('selected'));
+            btn.classList.add('selected');
+        });
+    });
+}
+
+function resetNutritionMealPicker() {
+    document.querySelectorAll('#nutrition-meal-picker .bg-option').forEach((b, i) => b.classList.toggle('selected', i === 0));
 }
 
 function initBodyTab() {
     document.getElementById('bw-date').value = todayStr();
     document.getElementById('nutrition-date').value = todayStr();
+
+    initBodyViewToggle();
+    initNutritionMealPicker();
+    initNutritionGoalsInlineEdit();
 
     document.getElementById('log-weight-form').addEventListener('submit', e => {
         e.preventDefault();
@@ -1619,7 +1969,7 @@ function initBodyTab() {
         saveBodyweight(entries);
 
         document.getElementById('bw-weight').value = '';
-        renderBodyweightList();
+        if (isBodyHistoryVisible()) renderBodyweightChart();
     });
 
     document.getElementById('log-nutrition-form').addEventListener('submit', e => {
@@ -1633,11 +1983,13 @@ function initBodyTab() {
             alert('Please choose a date and enter at least one of calories, protein, fat, or carbs.');
             return;
         }
+        const meal = document.querySelector('#nutrition-meal-picker .bg-option.selected').dataset.meal || null;
 
         const entries = getNutrition();
         entries.push({
             id: Date.now(),
             date,
+            meal,
             calories: caloriesVal ? parseFloat(caloriesVal) : null,
             protein: proteinVal ? parseFloat(proteinVal) : null,
             fat: fatVal ? parseFloat(fatVal) : null,
@@ -1649,49 +2001,13 @@ function initBodyTab() {
         document.getElementById('nutrition-protein').value = '';
         document.getElementById('nutrition-fat').value = '';
         document.getElementById('nutrition-carbs').value = '';
-        renderNutritionList();
+        resetNutritionMealPicker();
+        renderNutritionToday();
+        if (isBodyHistoryVisible()) renderNutritionChart();
     });
 }
 
-function renderNutritionList() {
-    const container = document.getElementById('nutrition-list');
-    const entries = getNutrition().slice().sort((a, b) => b.date.localeCompare(a.date));
-    if (entries.length === 0) {
-        container.innerHTML = '<p class="no-data">No nutrition entries yet.</p>';
-        return;
-    }
-    const fmt = (v, unit) => v != null ? v + unit : '–';
-    container.innerHTML = `
-        <div class="nutrition-table-wrap">
-            <table class="nutrition-table">
-                <thead>
-                    <tr><th>Date</th><th>Cal</th><th>Protein</th><th>Fat</th><th>Carbs</th><th></th></tr>
-                </thead>
-                <tbody>
-                    ${entries.map(e => `
-                    <tr>
-                        <td>${formatDate(e.date)}</td>
-                        <td>${fmt(e.calories, '')}</td>
-                        <td>${fmt(e.protein, 'g')}</td>
-                        <td>${fmt(e.fat, 'g')}</td>
-                        <td>${fmt(e.carbs, 'g')}</td>
-                        <td><button type="button" class="icon-btn danger-btn" data-id="${e.id}" title="Delete" aria-label="Delete">${ICON_X}</button></td>
-                    </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        </div>
-    `;
-    container.querySelectorAll('.danger-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (!confirm('Delete this entry?')) return;
-            saveNutrition(getNutrition().filter(e => e.id != btn.dataset.id));
-            renderNutritionList();
-        });
-    });
-}
-
-// ============ DAILY REVIEW TAB ============
+// ============ REVIEW TAB ============
 
 // Shared with the question manager: derives a 1-4 (worst-best) level from
 // where an answer sits in its question's ordered option list, so the grid's
@@ -1722,14 +2038,24 @@ function reviewEntryAnswers(r) {
 function renderReviewFormFields() {
     const questions = getReviewQuestions();
     const container = document.getElementById('review-questions-fields');
-    container.innerHTML = questions.map(q => `
+    // Every row shares the same grid-template-columns (maxOptions wide) and
+    // each question's own options are pushed to the rightmost columns via
+    // grid-column offsets - so options line up worst-to-best in the same
+    // columns across every question regardless of how many options each one
+    // has, and the best answer is always the rightmost column: a good day
+    // is just tapping straight down that column.
+    const maxOptions = questions.reduce((max, q) => Math.max(max, q.options.length), 0);
+    container.innerHTML = questions.map(q => {
+        const colOffset = maxOptions - q.options.length;
+        return `
         <div class="form-row">
             <label>${escapeHtml(q.label)}</label>
-            <div class="button-group review-q-group" data-qid="${q.id}">
-                ${q.options.map(opt => `<button type="button" class="bg-option" data-val="${escapeHtml(opt)}">${escapeHtml(opt)}</button>`).join('')}
+            <div class="button-group review-q-group" data-qid="${q.id}" style="grid-template-columns: repeat(${maxOptions}, 1fr);">
+                ${q.options.map((opt, i) => `<button type="button" class="bg-option" data-val="${escapeHtml(opt)}" style="grid-column: ${colOffset + i + 1}">${escapeHtml(opt)}</button>`).join('')}
             </div>
         </div>
-    `).join('');
+    `;
+    }).join('');
     container.querySelectorAll('.review-q-group').forEach(group => {
         group.querySelectorAll('.bg-option').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1747,20 +2073,11 @@ function resetReviewForm() {
     renderReviewFormFields();
 }
 
-let reviewViewMode = 'list';
 let showReviewComments = false;
 
 function refreshReviewView() {
     document.getElementById('review-stats').textContent = computeReviewStatsText();
-    if (reviewViewMode === 'grid') {
-        document.getElementById('review-list').classList.add('hidden');
-        document.getElementById('review-grid').classList.remove('hidden');
-        renderReviewGrid();
-    } else {
-        document.getElementById('review-list').classList.remove('hidden');
-        document.getElementById('review-grid').classList.add('hidden');
-        renderReviewList();
-    }
+    renderReviewGrid();
 }
 
 function computeReviewStatsText() {
@@ -1776,37 +2093,6 @@ function computeReviewStatsText() {
     });
 
     return `Last ${last7.length}: ` + parts.join(', ');
-}
-
-function renderReviewList() {
-    const container = document.getElementById('review-list');
-    const questions = getReviewQuestions();
-    const entries = getReviews().slice().sort((a, b) => b.date.localeCompare(a.date));
-    if (entries.length === 0) {
-        container.innerHTML = '<p class="no-data">No daily reviews yet.</p>';
-        return;
-    }
-    container.innerHTML = entries.map(r => {
-        const answers = reviewEntryAnswers(r);
-        const summary = questions.map(q => `${escapeHtml(q.label)}: ${escapeHtml(answers[q.id] ?? '-')}`).join(' · ');
-        const note = showReviewComments && r.note ? `<div class="review-note">${escapeHtml(r.note)}</div>` : '';
-        return `
-        <div class="card card-row">
-            <div>
-                <div class="card-title">${formatDate(r.date)}</div>
-                <div class="card-sub">${summary}</div>
-                ${note}
-            </div>
-            <button class="icon-btn danger-btn" data-id="${r.id}" title="Delete" aria-label="Delete">${ICON_X}</button>
-        </div>`;
-    }).join('');
-    container.querySelectorAll('.danger-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            if (!confirm('Delete this review?')) return;
-            saveReviews(getReviews().filter(r => r.id != btn.dataset.id));
-            refreshReviewView();
-        });
-    });
 }
 
 function renderReviewGrid() {
@@ -1825,7 +2111,7 @@ function renderReviewGrid() {
         const answers = reviewEntryAnswers(r);
         const cells = questions.map(q => `<td>${cell(answerLevel(q, answers[q.id]))}</td>`).join('');
         const noteCell = showReviewComments ? `<td class="review-note-cell">${r.note ? escapeHtml(r.note) : ''}</td>` : '';
-        return `<tr><td>${formatDate(r.date)}</td>${cells}${noteCell}</tr>`;
+        return `<tr><td>${formatDate(r.date)}</td>${cells}${noteCell}<td><button class="icon-btn danger-btn" data-id="${r.id}" title="Delete" aria-label="Delete">${ICON_X}</button></td></tr>`;
     }).join('');
 
     const headerCells = questions.map(q => `<th>${escapeHtml(q.label)}</th>`).join('');
@@ -1833,10 +2119,17 @@ function renderReviewGrid() {
     container.innerHTML = `
         <table class="habit-grid">
             <thead>
-                <tr><th>Date</th>${headerCells}${showReviewComments ? '<th>Note</th>' : ''}</tr>
+                <tr><th>Date</th>${headerCells}${showReviewComments ? '<th>Note</th>' : ''}<th></th></tr>
             </thead>
             <tbody>${rows}</tbody>
         </table>`;
+    container.querySelectorAll('.danger-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (!confirm('Delete this review?')) return;
+            saveReviews(getReviews().filter(r => r.id != btn.dataset.id));
+            refreshReviewView();
+        });
+    });
 }
 
 // ============ REVIEW QUESTIONS MANAGER ============
@@ -1990,11 +2283,30 @@ function initQuestionsManager() {
     document.getElementById('add-question-btn').addEventListener('click', addQuestion);
     document.getElementById('review-settings-gear-btn').addEventListener('click', () => {
         document.getElementById('review-settings-panel').classList.toggle('hidden');
+        dismissReviewGearHint();
     });
+}
+
+// One-time onboarding nudge pointing at the gear icon, dismissed for good
+// (localStorage, device-local - not worth a synced Firestore field) either
+// by its own close button or simply by using the gear icon once.
+const REVIEW_GEAR_HINT_KEY = 'koala-mode-review-gear-hint-dismissed';
+
+function dismissReviewGearHint() {
+    document.getElementById('review-gear-hint').classList.add('hidden');
+    try { localStorage.setItem(REVIEW_GEAR_HINT_KEY, '1'); } catch (e) { /* private browsing etc. - hint just reappears next visit, harmless */ }
+}
+
+function initReviewGearHint() {
+    let dismissed = false;
+    try { dismissed = localStorage.getItem(REVIEW_GEAR_HINT_KEY) === '1'; } catch (e) { /* ignore */ }
+    document.getElementById('review-gear-hint').classList.toggle('hidden', dismissed);
+    document.getElementById('review-gear-hint-dismiss').addEventListener('click', dismissReviewGearHint);
 }
 
 function initReviewTab() {
     initQuestionsManager();
+    initReviewGearHint();
     resetReviewForm();
 
     document.getElementById('review-form').addEventListener('submit', e => {
@@ -2032,15 +2344,6 @@ function initReviewTab() {
 
         resetReviewForm();
         refreshReviewView();
-    });
-
-    document.querySelectorAll('#review-view-toggle .bg-option').forEach(btn => {
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('#review-view-toggle .bg-option').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            reviewViewMode = btn.dataset.view;
-            refreshReviewView();
-        });
     });
 
     document.getElementById('review-show-comments').addEventListener('change', e => {
@@ -2110,10 +2413,44 @@ function initAuthUI() {
 }
 
 // ============ REST TIMER ============
+// Tracked as an absolute end timestamp (not just a tick count) and persisted
+// to localStorage - device-local on purpose, a rest timer only matters on
+// the device you're actually resting next to, so it doesn't belong in the
+// synced Firestore data. iOS suspends a backgrounded PWA's JS within
+// seconds, so a plain setInterval can't be trusted to keep ticking while
+// the app isn't in the foreground; storing the end time means that whenever
+// the app IS running again (tab resumed, or freshly reopened after being
+// fully closed), the displayed remaining time/done state is recomputed from
+// the real elapsed wall-clock time instead of being stuck wherever the
+// interval last happened to fire. It still can't alert you while the app
+// isn't running - that would need server-sent push notifications.
+const REST_TIMER_STORAGE_KEY = 'koala-mode-rest-timer';
 
 let restTimerDefault = 120;
 let restTimerRemaining = restTimerDefault;
+let restTimerEndAt = null; // epoch ms the timer hits zero, or null when paused/stopped
 let restTimerInterval = null;
+
+function saveRestTimerState() {
+    try {
+        localStorage.setItem(REST_TIMER_STORAGE_KEY, JSON.stringify({ restTimerDefault, restTimerEndAt, restTimerRemaining }));
+    } catch (e) { /* localStorage unavailable (e.g. private browsing) - timer still works, just won't resume across reloads */ }
+}
+
+function loadRestTimerState() {
+    try {
+        const raw = localStorage.getItem(REST_TIMER_STORAGE_KEY);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (saved.restTimerDefault) restTimerDefault = saved.restTimerDefault;
+        if (saved.restTimerEndAt) {
+            restTimerEndAt = saved.restTimerEndAt;
+            restTimerRemaining = Math.max(0, Math.round((restTimerEndAt - Date.now()) / 1000));
+        } else if (saved.restTimerRemaining != null) {
+            restTimerRemaining = saved.restTimerRemaining;
+        }
+    } catch (e) { /* ignore corrupt/unavailable storage */ }
+}
 
 function formatRestTimer(seconds) {
     const m = Math.floor(seconds / 60);
@@ -2135,29 +2472,37 @@ function setRestTimerToggleIcon(running) {
     btn.title = running ? 'Pause' : 'Start';
 }
 
+function tickRestTimer() {
+    restTimerRemaining = Math.max(0, Math.round((restTimerEndAt - Date.now()) / 1000));
+    updateRestTimerDisplay();
+    if (restTimerRemaining <= 0) pauseRestTimer();
+}
+
 function startRestTimer() {
     if (restTimerRemaining <= 0) restTimerRemaining = restTimerDefault;
+    restTimerEndAt = Date.now() + restTimerRemaining * 1000;
     setRestTimerToggleIcon(true);
-    restTimerInterval = setInterval(() => {
-        restTimerRemaining--;
-        updateRestTimerDisplay();
-        if (restTimerRemaining <= 0) pauseRestTimer();
-    }, 1000);
+    saveRestTimerState();
+    restTimerInterval = setInterval(tickRestTimer, 1000);
     updateRestTimerDisplay();
 }
 
 function pauseRestTimer() {
     clearInterval(restTimerInterval);
     restTimerInterval = null;
+    restTimerEndAt = null;
     setRestTimerToggleIcon(false);
+    saveRestTimerState();
     updateRestTimerDisplay();
 }
 
 function resetRestTimer() {
     clearInterval(restTimerInterval);
     restTimerInterval = null;
+    restTimerEndAt = null;
     restTimerRemaining = restTimerDefault;
     setRestTimerToggleIcon(false);
+    saveRestTimerState();
     updateRestTimerDisplay();
 }
 
@@ -2240,8 +2585,11 @@ function renderEverything() {
     renderPlanFilterChips();
     renderPlanList();
     renderCategoryManager();
-    renderBodyweightList();
-    renderNutritionList();
+    renderNutritionToday();
+    if (isBodyHistoryVisible()) {
+        renderBodyweightChart();
+        renderNutritionChart();
+    }
     renderQuestionsManager();
     refreshReviewView();
 }

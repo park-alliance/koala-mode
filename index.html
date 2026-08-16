@@ -119,9 +119,28 @@
 
                 <div id="exercise-manager-panel" class="hidden">
                     <div id="setup-wizard" class="hidden">
+                        <div class="setup-welcome">
+                            <h2 class="setup-welcome-title">Welcome to Koala Mode</h2>
+                            <p class="card-sub">You're just getting started - this quick setup wizard configures your categories and exercises so you can start logging right away.</p>
+                        </div>
                         <p class="card-sub">Pick a starting template to quickly set up your categories and exercises. Everything is pre-checked: uncheck anything you don't want, and you can always add, rename, or remove things later.</p>
 
                         <div id="setup-template-choice">
+                            <div class="setup-profile-question">
+                                <label class="setup-profile-question-label">Sex</label>
+                                <div class="button-group" id="setup-profile-sex-picker">
+                                    <button type="button" class="bg-option" data-sex="female">Female</button>
+                                    <button type="button" class="bg-option" data-sex="male">Male</button>
+                                </div>
+                                <label class="setup-profile-question-label">Height</label>
+                                <div class="height-ft-in-row">
+                                    <input type="number" id="setup-profile-height-ft" class="height-ft-input" inputmode="numeric" step="1" min="0" placeholder="5">
+                                    <span class="height-ft-in-unit">ft</span>
+                                    <input type="number" id="setup-profile-height-in" class="height-in-input" inputmode="numeric" step="1" min="0" max="11" placeholder="8">
+                                    <span class="height-ft-in-unit">in</span>
+                                </div>
+                                <p class="card-sub">Used for a rough daily calorie-maintenance estimate on the Weight &amp; Nutrition tab.</p>
+                            </div>
                             <button type="button" class="grid-btn setup-template-btn" data-template="ppl" style="display:block;width:100%;text-align:left;margin-bottom:10px;">Push / Pull / Legs / Core / Cardio</button>
                             <button type="button" class="grid-btn setup-template-btn" data-template="muscle" style="display:block;width:100%;text-align:left;margin-bottom:10px;">Muscle Groups (Legs, Arms, Chest, Back, Shoulders, Core, Cardio)</button>
                             <button type="button" class="link-btn" id="setup-skip-btn">Skip, I'll set up manually</button>
@@ -129,9 +148,9 @@
 
                         <div id="setup-checklist-view" class="hidden">
                             <button class="back-btn" id="setup-back-btn">&larr; Choose a different template</button>
-                            <button type="button" class="primary-btn setup-confirm-btn" id="setup-confirm-btn-top">Set Up My Exercises</button>
+                            <button type="button" class="primary-btn setup-confirm-btn" id="setup-confirm-btn-top">Accept Exercise List</button>
                             <div id="setup-checklist-list"></div>
-                            <button type="button" class="primary-btn setup-confirm-btn" id="setup-confirm-btn">Set Up My Exercises</button>
+                            <button type="button" class="primary-btn setup-confirm-btn" id="setup-confirm-btn">Accept Exercise List</button>
                         </div>
                     </div>
 
@@ -184,7 +203,23 @@
                             <input type="date" id="log-date" class="date-compact" required>
                         </div>
                         <button type="button" class="link-btn" id="log-comment-toggle">+ Note</button>
-                        <button type="submit" class="primary-btn">Log Set</button>
+                        <span class="pr-burst-wrap">
+                            <button type="submit" class="primary-btn">Log Set</button>
+                            <span class="pr-burst" id="pr-burst" aria-hidden="true">
+                                <span class="pr-burst-line" style="transform:rotate(0deg)"><span class="pr-burst-line-inner"></span></span>
+                                <span class="pr-burst-line" style="transform:rotate(30deg)"><span class="pr-burst-line-inner"></span></span>
+                                <span class="pr-burst-line" style="transform:rotate(60deg)"><span class="pr-burst-line-inner"></span></span>
+                                <span class="pr-burst-line" style="transform:rotate(90deg)"><span class="pr-burst-line-inner"></span></span>
+                                <span class="pr-burst-line" style="transform:rotate(120deg)"><span class="pr-burst-line-inner"></span></span>
+                                <span class="pr-burst-line" style="transform:rotate(150deg)"><span class="pr-burst-line-inner"></span></span>
+                                <span class="pr-burst-line" style="transform:rotate(180deg)"><span class="pr-burst-line-inner"></span></span>
+                                <span class="pr-burst-line" style="transform:rotate(210deg)"><span class="pr-burst-line-inner"></span></span>
+                                <span class="pr-burst-line" style="transform:rotate(240deg)"><span class="pr-burst-line-inner"></span></span>
+                                <span class="pr-burst-line" style="transform:rotate(270deg)"><span class="pr-burst-line-inner"></span></span>
+                                <span class="pr-burst-line" style="transform:rotate(300deg)"><span class="pr-burst-line-inner"></span></span>
+                                <span class="pr-burst-line" style="transform:rotate(330deg)"><span class="pr-burst-line-inner"></span></span>
+                            </span>
+                        </span>
                     </div>
                 </form>
 
@@ -227,60 +262,84 @@
         <section id="tab-body" class="tab-panel">
             <h2>Weight &amp; Nutrition</h2>
 
-            <form id="log-weight-form" class="log-group log-group-weight">
-                <div class="form-row">
-                    <label>Weight (lb)
-                        <input type="number" id="bw-weight" step="0.1" inputmode="decimal" placeholder="180">
-                    </label>
-                </div>
-                <div class="form-row log-submit-row">
-                    <div class="date-row">
-                        <input type="date" id="bw-date" class="date-compact" required>
-                    </div>
-                    <button type="submit" class="primary-btn primary-btn-solid">Log Weight</button>
-                </div>
-            </form>
-
-            <form id="log-nutrition-form" class="log-group log-group-nutrition">
-                <div class="form-row form-row-4">
-                    <label>Calories
-                        <input type="number" id="nutrition-calories" step="1" inputmode="numeric" placeholder="2200">
-                    </label>
-                    <label>Protein (g)
-                        <input type="number" id="nutrition-protein" step="1" inputmode="numeric" placeholder="180">
-                    </label>
-                    <label>Fat (g)
-                        <input type="number" id="nutrition-fat" step="1" inputmode="numeric" placeholder="70">
-                    </label>
-                    <label>Carbs (g)
-                        <input type="number" id="nutrition-carbs" step="1" inputmode="numeric" placeholder="220">
-                    </label>
-                </div>
-                <div class="form-row log-submit-row">
-                    <div class="date-row">
-                        <input type="date" id="nutrition-date" class="date-compact" required>
-                    </div>
-                    <button type="submit" class="primary-btn">Log Nutrition</button>
-                </div>
-            </form>
-
-            <h3>Weight</h3>
-            <div class="view-toggle hidden" id="bw-history-toggle">
-                <button type="button" class="bg-option selected" data-view="list">List</button>
-                <button type="button" class="bg-option" data-view="plot">Plot</button>
+            <div class="view-toggle" id="body-view-toggle">
+                <button type="button" class="bg-option selected" data-view="log">Log</button>
+                <button type="button" class="bg-option" data-view="history">History</button>
             </div>
-            <div id="bodyweight-list"></div>
-            <div id="bodyweight-chart" class="hidden"></div>
 
-            <h3>Nutrition</h3>
-            <div id="nutrition-list"></div>
+            <div id="body-log-view">
+                <form id="log-weight-form" class="log-group log-group-weight">
+                    <div class="form-row">
+                        <label>Weight (lb)
+                            <input type="number" id="bw-weight" step="0.1" inputmode="decimal" placeholder="180">
+                        </label>
+                    </div>
+                    <div class="form-row log-submit-row">
+                        <div class="date-row">
+                            <input type="date" id="bw-date" class="date-compact" required>
+                        </div>
+                        <button type="submit" class="primary-btn">Log Weight</button>
+                    </div>
+                </form>
+
+                <form id="log-nutrition-form" class="log-group log-group-nutrition">
+                    <div class="form-row form-row-4">
+                        <label>Calories
+                            <input type="number" id="nutrition-calories" step="1" inputmode="numeric" placeholder="2200">
+                        </label>
+                        <label>Protein (g)
+                            <input type="number" id="nutrition-protein" step="1" inputmode="numeric" placeholder="180">
+                        </label>
+                        <label>Fat (g)
+                            <input type="number" id="nutrition-fat" step="1" inputmode="numeric" placeholder="70">
+                        </label>
+                        <label>Carbs (g)
+                            <input type="number" id="nutrition-carbs" step="1" inputmode="numeric" placeholder="220">
+                        </label>
+                    </div>
+                    <div class="form-row">
+                        <label>Meal</label>
+                        <div class="button-group" id="nutrition-meal-picker">
+                            <button type="button" class="bg-option selected" data-meal="">Whole Day</button>
+                            <button type="button" class="bg-option" data-meal="Breakfast">Breakfast</button>
+                            <button type="button" class="bg-option" data-meal="Lunch">Lunch</button>
+                            <button type="button" class="bg-option" data-meal="Dinner">Dinner</button>
+                            <button type="button" class="bg-option" data-meal="Snack">Snack</button>
+                        </div>
+                    </div>
+                    <div class="form-row log-submit-row">
+                        <div class="date-row">
+                            <input type="date" id="nutrition-date" class="date-compact" required>
+                        </div>
+                        <button type="submit" class="primary-btn">Log Nutrition</button>
+                    </div>
+                </form>
+
+                <div id="nutrition-today" class="nutrition-today">
+                    <h3>Today</h3>
+                    <div id="nutrition-today-bars"></div>
+                </div>
+            </div>
+
+            <div id="body-history-view" class="hidden">
+                <h3>Weight</h3>
+                <div id="bodyweight-chart"></div>
+
+                <h3>Nutrition (Calories)</h3>
+                <div id="nutrition-chart"></div>
+            </div>
         </section>
 
-        <!-- DAILY REVIEW TAB -->
+        <!-- REVIEW TAB -->
         <section id="tab-review" class="tab-panel">
             <div class="review-header-row">
-                <h2>Daily Review</h2>
+                <h2>Review</h2>
                 <button type="button" class="gear-btn" id="review-settings-gear-btn" aria-label="Review settings" title="Review settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
+            </div>
+
+            <div id="review-gear-hint" class="hint-banner hidden">
+                <span>Tap the gear icon above to add, edit, or reorder your daily questions.</span>
+                <button type="button" class="icon-btn" id="review-gear-hint-dismiss" aria-label="Dismiss" title="Dismiss"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg></button>
             </div>
 
             <div id="review-settings-panel" class="hidden">
@@ -308,14 +367,9 @@
 
             <p class="card-sub" id="review-stats"></p>
             <div class="review-view-row">
-                <div class="view-toggle" id="review-view-toggle">
-                    <button type="button" class="bg-option selected" data-view="list">List</button>
-                    <button type="button" class="bg-option" data-view="grid">Grid</button>
-                </div>
                 <label class="show-comments-toggle"><input type="checkbox" id="review-show-comments"> Show comments</label>
             </div>
-            <div id="review-list"></div>
-            <div id="review-grid" class="hidden"></div>
+            <div id="review-grid"></div>
         </section>
     </main>
 
@@ -325,14 +379,16 @@
             <span class="tab-btn-label">Workout Log</span>
         </button>
         <button class="tab-btn" data-tab="body">
-            <span class="tab-btn-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"></circle><circle cx="12" cy="12" r="3"></circle></svg></span>
+            <span class="tab-btn-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg></span>
             <span class="tab-btn-label">Weight &amp; Nutrition</span>
         </button>
         <button class="tab-btn" data-tab="review">
             <span class="tab-btn-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><path d="m7 12 3 3 7-7"></path></svg></span>
-            <span class="tab-btn-label">Daily Review</span>
+            <span class="tab-btn-label">Review</span>
         </button>
     </nav>
+
+    <div id="toast" class="hidden" role="status"></div>
     </div>
 
     <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>

@@ -5,6 +5,7 @@
     --muted: #6b6b76;
     --border: #e7e7ec;
     --accent: #6c5ce7;
+    --accent-dark: #4e3ec9;
     --accent-tint: #f1efff;
     --accent-text: #ffffff;
     --danger: #e0554e;
@@ -55,6 +56,30 @@ body {
     padding-top: 12px;
     border-top: 1px solid var(--border);
     color: var(--muted);
+}
+
+/* Transient status message (e.g. a failed save). Fixed like .modal-overlay -
+   brief/self-dismissing, not present during scroll, so none of the iOS
+   position:fixed jank #app-shell's flex-column layout works around applies. */
+#toast {
+    position: fixed;
+    left: 50%;
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+    transform: translateX(-50%);
+    max-width: calc(100% - 32px);
+    background: var(--text);
+    color: #fff;
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    text-align: center;
+    box-shadow: var(--shadow);
+    z-index: 20;
+}
+
+#toast svg {
+    vertical-align: -2px;
+    margin-right: 4px;
 }
 
 #auth-screen {
@@ -199,6 +224,24 @@ body {
     font-size: 13px;
     margin-bottom: 14px;
     text-align: left;
+}
+
+.hint-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--accent-tint);
+    color: var(--accent-dark);
+    border-radius: 8px;
+    padding: 8px 10px 8px 12px;
+    font-size: 13px;
+    margin-bottom: 14px;
+}
+
+.hint-banner .icon-btn {
+    color: var(--accent-dark);
+    flex-shrink: 0;
 }
 
 #tab-nav {
@@ -453,12 +496,6 @@ h3 {
     transition: opacity 0.15s ease;
 }
 
-.primary-btn-solid {
-    background: var(--accent);
-    color: var(--accent-text);
-    border-color: var(--accent);
-}
-
 #new-plan-btn {
     display: block;
     margin-bottom: 14px;
@@ -536,11 +573,6 @@ form {
     font-size: 14px;
 }
 
-.log-group-weight {
-    background: var(--accent-tint);
-    border-color: var(--accent-tint);
-}
-
 .log-group input[type="number"]::-webkit-outer-spin-button,
 .log-group input[type="number"]::-webkit-inner-spin-button {
     -webkit-appearance: none;
@@ -548,6 +580,141 @@ form {
 }
 
 .log-group input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+.nutrition-today {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    padding: 14px;
+    margin-bottom: 16px;
+}
+
+.nutrition-today h3 {
+    margin: 0 0 12px;
+}
+
+.nutrition-targets-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    color: var(--muted);
+    margin: 0 0 8px;
+}
+
+.nutrition-goal-row {
+    margin-bottom: 10px;
+    cursor: pointer;
+}
+
+.nutrition-goal-row:last-child {
+    margin-bottom: 0;
+}
+
+.nutrition-goal-label {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    margin-bottom: 4px;
+}
+
+.nutrition-goal-label .over-text {
+    color: var(--accent-dark);
+}
+
+.nutrition-goal-edit-input {
+    width: 90px;
+    padding: 3px 6px;
+    font-size: 13px;
+    text-align: right;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+}
+
+.nutrition-goal-edit-input::-webkit-outer-spin-button,
+.nutrition-goal-edit-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.nutrition-goal-edit-input {
+    -moz-appearance: textfield;
+}
+
+.nutrition-goal-track {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--border);
+    overflow: hidden;
+}
+
+.nutrition-goal-fill {
+    height: 100%;
+    background: var(--accent);
+    border-radius: 4px;
+}
+
+.nutrition-goal-fill.over {
+    background: var(--accent-dark);
+}
+
+.setup-profile-question {
+    margin-bottom: 16px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+}
+
+.setup-profile-question-label {
+    display: block;
+    font-size: 12px;
+    color: var(--muted);
+    margin: 10px 0 6px;
+}
+
+.setup-profile-question-label:first-child {
+    margin-top: 0;
+}
+
+.setup-welcome {
+    margin-bottom: 14px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+}
+
+.setup-welcome-title {
+    margin: 0 0 6px;
+}
+
+.height-ft-in-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.height-ft-input,
+.height-in-input {
+    width: 56px;
+}
+
+.height-ft-in-unit {
+    font-size: 12px;
+    color: var(--muted);
+}
+
+.height-ft-input::-webkit-outer-spin-button,
+.height-ft-input::-webkit-inner-spin-button,
+.height-in-input::-webkit-outer-spin-button,
+.height-in-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.height-ft-input,
+.height-in-input {
     -moz-appearance: textfield;
 }
 
@@ -559,6 +726,50 @@ form {
 
 .log-submit-row > *:last-child {
     margin-left: auto;
+}
+
+/* Radiating-lines burst around the Log Set button, played once when the
+   just-logged set is a PR (see triggerPRBurst() in app.js). Each line is an
+   outer span fixed at its angle (rotate only, no animation) wrapping an
+   inner span that does the actual fly-out-and-fade, so a rotated line still
+   travels straight outward along its own axis. */
+.pr-burst-wrap {
+    position: relative;
+    display: inline-block;
+}
+
+.pr-burst {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+.pr-burst-line {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+}
+
+.pr-burst-line-inner {
+    position: absolute;
+    left: -1px;
+    top: -24px;
+    width: 2px;
+    height: 8px;
+    border-radius: 1px;
+    background: var(--accent);
+    opacity: 0;
+}
+
+.pr-burst.active .pr-burst-line-inner {
+    animation: pr-burst-fly 0.7s ease-out;
+}
+
+@keyframes pr-burst-fly {
+    0% { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-16px) scale(0.5); }
 }
 
 .date-row {
@@ -621,51 +832,6 @@ input, select {
 .inline-form input {
     flex: 1;
     min-width: 160px;
-}
-
-.nutrition-table-wrap {
-    overflow-x: auto;
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    box-shadow: var(--shadow);
-    background: var(--card-bg);
-    margin-bottom: 10px;
-}
-
-.nutrition-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 13px;
-}
-
-.nutrition-table th,
-.nutrition-table td {
-    padding: 8px 10px;
-    text-align: left;
-    white-space: nowrap;
-}
-
-.nutrition-table thead th {
-    color: var(--muted);
-    font-weight: 600;
-    font-size: 11px;
-    text-transform: uppercase;
-    letter-spacing: 0.02em;
-    border-bottom: 1px solid var(--border);
-}
-
-.nutrition-table tbody tr:not(:last-child) td {
-    border-bottom: 1px solid #f0f0f0;
-}
-
-.nutrition-table td:last-child,
-.nutrition-table th:last-child {
-    text-align: right;
-}
-
-.nutrition-table .small-btn {
-    padding: 4px 8px;
-    font-size: 12px;
 }
 
 .card {
@@ -794,6 +960,13 @@ input, select {
     font-size: 14px;
 }
 
+.pr-badge {
+    display: inline-flex;
+    vertical-align: -2px;
+    margin-left: 6px;
+    color: var(--accent);
+}
+
 .history-date-group {
     margin-bottom: 12px;
 }
@@ -809,6 +982,20 @@ input, select {
     display: flex;
     gap: 8px;
     flex-wrap: wrap;
+}
+
+/* Overrides .button-group's flex layout - grid-template-columns and each
+   button's grid-column are set inline per-row in renderReviewFormFields()
+   so every question's options line up in shared columns. */
+.review-q-group.button-group {
+    display: grid;
+    gap: 8px;
+}
+
+.review-q-group .bg-option {
+    text-align: center;
+    padding-left: 6px;
+    padding-right: 6px;
 }
 
 #plan-filter-chips {
@@ -1001,12 +1188,44 @@ input, select {
     border-radius: 6px;
     font-size: 12px;
     white-space: nowrap;
-    pointer-events: none;
+    pointer-events: auto;
     display: none;
+    z-index: 5;
 }
 
 .trend-tooltip.visible {
     display: block;
+}
+
+.tooltip-date-label {
+    font-weight: bold;
+    margin-bottom: 4px;
+}
+
+.tooltip-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.tooltip-row:not(:last-child) {
+    margin-bottom: 2px;
+}
+
+.tooltip-delete-btn {
+    background: none;
+    border: none;
+    color: #fff;
+    opacity: 0.7;
+    cursor: pointer;
+    display: inline-flex;
+    flex-shrink: 0;
+    padding: 2px;
+}
+
+.tooltip-delete-btn:active {
+    opacity: 1;
 }
 
 .segment-row {
@@ -1108,10 +1327,6 @@ input, select {
     flex-wrap: wrap;
 }
 
-.review-view-row .view-toggle {
-    margin-bottom: 0;
-}
-
 .show-comments-toggle {
     display: flex;
     align-items: center;
@@ -1125,8 +1340,3 @@ input, select {
     width: auto;
 }
 
-.review-note {
-    font-style: italic;
-    font-size: 12px;
-    color: var(--muted);
-}

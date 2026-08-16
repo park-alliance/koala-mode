@@ -12,3 +12,11 @@ firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
 const db = firebase.firestore();
+
+// Lets reads serve from local cache when offline and queues writes made
+// offline (e.g. spotty gym wifi) to sync automatically once back online,
+// instead of initialLoadAndSync()'s .get() calls hanging/failing and
+// syncWrite()'s .set() calls silently dropping.
+db.enablePersistence({ synchronizeTabs: true }).catch(err => {
+    console.warn('Firestore offline persistence not enabled:', err.code);
+});
