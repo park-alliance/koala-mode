@@ -174,12 +174,80 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
     margin-bottom: 12px;
 }
 
 .review-header-row h2,
 .log-directly-header-row h2 {
     margin: 0;
+}
+
+/* Weight logging sits next to the Log/History view toggle, same idea as
+   #rest-timer next to "Start/Plan Workout" - just a bit bigger, since this
+   is the tab's only weight-entry point rather than a secondary widget. */
+#body-view-toggle-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+#body-view-toggle-row .view-toggle {
+    margin-bottom: 0;
+}
+
+.header-weight-log {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    width: fit-content;
+    flex-shrink: 0;
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card-bg);
+    box-shadow: var(--shadow);
+}
+
+/* Standard visually-hidden pattern: bw-date stays a real, focusable date
+   input (submission still just reads its .value) but is never shown -
+   #bw-date-btn calls .showPicker() on it instead, so tapping the calendar
+   icon opens the native date picker directly with no visible input/text. */
+.visually-hidden-date {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.header-weight-input {
+    width: 72px;
+    padding: 6px 8px;
+    font-size: 14px;
+}
+
+.header-weight-btn {
+    padding: 7px 14px;
+    font-size: 13px;
+}
+
+.header-weight-input::-webkit-outer-spin-button,
+.header-weight-input::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+.header-weight-input {
+    -moz-appearance: textfield;
 }
 
 #exercise-manager-panel,
@@ -1011,9 +1079,16 @@ input, select {
     font-size: 14px;
 }
 
+.icon-only-option {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+}
+
 .bg-option.selected {
-    background: var(--accent);
-    color: var(--accent-text);
+    background: var(--accent-tint);
+    color: var(--accent);
     border-color: var(--accent);
 }
 

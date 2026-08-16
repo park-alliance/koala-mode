@@ -1958,6 +1958,12 @@ function initBodyTab() {
     initNutritionMealPicker();
     initNutritionGoalsInlineEdit();
 
+    document.getElementById('bw-date-btn').addEventListener('click', () => {
+        const dateInput = document.getElementById('bw-date');
+        if (dateInput.showPicker) dateInput.showPicker();
+        else dateInput.focus();
+    });
+
     document.getElementById('log-weight-form').addEventListener('submit', e => {
         e.preventDefault();
         const date = document.getElementById('bw-date').value;
