@@ -464,6 +464,51 @@ input, select {
     min-width: 160px;
 }
 
+.nutrition-table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    box-shadow: var(--shadow);
+    background: var(--card-bg);
+    margin-bottom: 10px;
+}
+
+.nutrition-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+}
+
+.nutrition-table th,
+.nutrition-table td {
+    padding: 8px 10px;
+    text-align: left;
+    white-space: nowrap;
+}
+
+.nutrition-table thead th {
+    color: var(--muted);
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    border-bottom: 1px solid var(--border);
+}
+
+.nutrition-table tbody tr:not(:last-child) td {
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.nutrition-table td:last-child,
+.nutrition-table th:last-child {
+    text-align: right;
+}
+
+.nutrition-table .small-btn {
+    padding: 4px 8px;
+    font-size: 12px;
+}
+
 .card {
     background: var(--card-bg);
     border: 1px solid var(--border);

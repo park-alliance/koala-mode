@@ -1517,22 +1517,28 @@ function renderNutritionList() {
         container.innerHTML = '<p class="no-data">No nutrition entries yet.</p>';
         return;
     }
-    container.innerHTML = entries.map(e => {
-        const parts = [];
-        if (e.calories != null) parts.push(e.calories + ' cal');
-        if (e.protein != null) parts.push(e.protein + 'g protein');
-        if (e.fat != null) parts.push(e.fat + 'g fat');
-        if (e.carbs != null) parts.push(e.carbs + 'g carbs');
-        return `
-        <div class="card card-row">
-            <div>
-                <div class="card-title">${parts.join(' · ') || '-'}</div>
-                <div class="card-sub">${formatDate(e.date)}</div>
-            </div>
-            <button class="small-btn danger-btn" data-id="${e.id}">Delete</button>
+    const fmt = (v, unit) => v != null ? v + unit : '–';
+    container.innerHTML = `
+        <div class="nutrition-table-wrap">
+            <table class="nutrition-table">
+                <thead>
+                    <tr><th>Date</th><th>Cal</th><th>Protein</th><th>Fat</th><th>Carbs</th><th></th></tr>
+                </thead>
+                <tbody>
+                    ${entries.map(e => `
+                    <tr>
+                        <td>${formatDate(e.date)}</td>
+                        <td>${fmt(e.calories, '')}</td>
+                        <td>${fmt(e.protein, 'g')}</td>
+                        <td>${fmt(e.fat, 'g')}</td>
+                        <td>${fmt(e.carbs, 'g')}</td>
+                        <td><button type="button" class="small-btn danger-btn" data-id="${e.id}">Delete</button></td>
+                    </tr>
+                    `).join('')}
+                </tbody>
+            </table>
         </div>
     `;
-    }).join('');
     container.querySelectorAll('.danger-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             if (!confirm('Delete this entry?')) return;
