@@ -59,15 +59,14 @@
     <main>
         <!-- LOG TAB -->
         <section id="tab-log" class="tab-panel active">
-            <div id="rest-timer">
-                <span id="rest-timer-label">Rest Timer</span>
-                <input type="text" id="rest-timer-display" value="2:00" inputmode="numeric">
-                <button type="button" class="small-btn" id="rest-timer-toggle">Start</button>
-                <button type="button" class="small-btn" id="rest-timer-reset" title="Reset">&#8635;</button>
-            </div>
-
             <div id="log-start-row">
                 <button class="primary-btn" id="start-planned-btn">&#9654; Start / Plan a Workout</button>
+                <div id="rest-timer">
+                    <span id="rest-timer-label">Rest Timer</span>
+                    <input type="text" id="rest-timer-display" value="2:00" inputmode="numeric">
+                    <button type="button" class="small-btn" id="rest-timer-toggle">Start</button>
+                    <button type="button" class="small-btn" id="rest-timer-reset" title="Reset">&#8635;</button>
+                </div>
             </div>
 
             <div id="log-plan-picker" class="hidden">
@@ -77,11 +76,9 @@
             </div>
 
             <div id="log-session-view" class="hidden">
-                <button class="back-btn" id="log-session-exit">&larr; Exit planned workout</button>
-                <h2 id="log-session-title"></h2>
-                <div class="date-row">
-                    <label for="session-date">Date</label>
-                    <input type="date" id="session-date" class="date-compact">
+                <div class="log-session-header-row">
+                    <button class="back-btn" id="log-session-exit">&larr; Exit planned workout</button>
+                    <h2 id="log-session-title"></h2>
                 </div>
                 <div id="log-session-strip" class="session-strip"></div>
                 <button type="button" class="link-btn" id="session-add-btn">+ Add exercise</button>
@@ -251,17 +248,27 @@
             <div id="bodyweight-chart" class="hidden"></div>
 
             <h2>Nutrition</h2>
-            <form id="nutrition-form" class="form-row form-row-3">
+            <form id="nutrition-form">
                 <div class="date-row">
                     <label for="nutrition-date">Date</label>
                     <input type="date" id="nutrition-date" class="date-compact" required>
                 </div>
-                <label>Calories
-                    <input type="number" id="nutrition-calories" step="1" inputmode="numeric" placeholder="2200">
-                </label>
-                <label>Protein (g)
-                    <input type="number" id="nutrition-protein" step="1" inputmode="numeric" placeholder="180">
-                </label>
+                <div class="form-row form-row-2">
+                    <label>Calories
+                        <input type="number" id="nutrition-calories" step="1" inputmode="numeric" placeholder="2200">
+                    </label>
+                    <label>Protein (g)
+                        <input type="number" id="nutrition-protein" step="1" inputmode="numeric" placeholder="180">
+                    </label>
+                </div>
+                <div class="form-row form-row-2">
+                    <label>Fat (g)
+                        <input type="number" id="nutrition-fat" step="1" inputmode="numeric" placeholder="70">
+                    </label>
+                    <label>Carbs (g)
+                        <input type="number" id="nutrition-carbs" step="1" inputmode="numeric" placeholder="220">
+                    </label>
+                </div>
                 <button type="submit" class="primary-btn">Log Nutrition</button>
             </form>
             <div id="nutrition-list"></div>

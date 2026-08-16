@@ -312,11 +312,11 @@ function renderExercisePickerButtons(containerId, excludeIds, onPick) {
         if (list.length === 0) return;
         const isOpen = openSet.has(cat);
         html += `<div class="category-header" data-cat="${escapeHtml(cat)}"><span class="category-header-title">${escapeHtml(cat)}</span></div>`;
-        html += `<div class="category-body${isOpen ? ' open' : ''}">`;
+        html += `<div class="category-body${isOpen ? ' open' : ''}"><div class="button-grid">`;
         list.forEach(ex => {
-            html += `<div class="exercise-row"><button type="button" class="picker-ex-btn" data-id="${ex.id}" style="border:none;background:none;cursor:pointer;text-align:left;padding:6px 0;font-size:14px;">+ ${escapeHtml(ex.name)}</button></div>`;
+            html += `<button type="button" class="grid-btn picker-ex-btn" data-id="${ex.id}">${escapeHtml(ex.name)}</button>`;
         });
-        html += `</div>`;
+        html += `</div></div>`;
     });
 
     container.innerHTML = html || '<p class="no-data">No more exercises available.</p>';
@@ -776,7 +776,7 @@ function enterSessionMode() {
     document.getElementById('log-session-view').classList.remove('hidden');
     document.getElementById('log-step-detail').classList.remove('hidden');
 
-    document.getElementById('session-date').value = activeSession.date;
+    document.querySelector('.log-session-header-row').appendChild(document.getElementById('rest-timer'));
 
     renderSessionStrip();
     populateDetailView(activeSession.exerciseIds[activeSession.currentIndex]);
@@ -790,6 +790,8 @@ function exitSessionMode() {
     document.getElementById('log-plan-picker').classList.add('hidden');
     document.getElementById('log-start-row').classList.remove('hidden');
     document.getElementById('log-step-category').classList.remove('hidden');
+
+    document.getElementById('log-start-row').appendChild(document.getElementById('rest-timer'));
 }
 
 const SESSION_GEAR_ICON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>`;
@@ -921,13 +923,6 @@ function initSessionControls() {
     });
 
     document.getElementById('session-finish-btn').addEventListener('click', exitSessionMode);
-
-    document.getElementById('session-date').addEventListener('change', () => {
-        activeSession.date = document.getElementById('session-date').value || todayStr();
-        saveActiveSession(activeSession);
-        document.getElementById('log-date').value = activeSession.date;
-        document.getElementById('cardio-date').value = activeSession.date;
-    });
 
     document.getElementById('session-add-btn').addEventListener('click', () => openSessionPicker('add'));
     document.getElementById('session-picker-back').addEventListener('click', () => {
@@ -1522,15 +1517,22 @@ function renderNutritionList() {
         container.innerHTML = '<p class="no-data">No nutrition entries yet.</p>';
         return;
     }
-    container.innerHTML = entries.map(e => `
+    container.innerHTML = entries.map(e => {
+        const parts = [];
+        if (e.calories != null) parts.push(e.calories + ' cal');
+        if (e.protein != null) parts.push(e.protein + 'g protein');
+        if (e.fat != null) parts.push(e.fat + 'g fat');
+        if (e.carbs != null) parts.push(e.carbs + 'g carbs');
+        return `
         <div class="card card-row">
             <div>
-                <div class="card-title">${e.calories != null ? e.calories + ' cal' : '-'}${e.protein != null ? ' · ' + e.protein + 'g protein' : ''}</div>
+                <div class="card-title">${parts.join(' · ') || '-'}</div>
                 <div class="card-sub">${formatDate(e.date)}</div>
             </div>
             <button class="small-btn danger-btn" data-id="${e.id}">Delete</button>
         </div>
-    `).join('');
+    `;
+    }).join('');
     container.querySelectorAll('.danger-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             if (!confirm('Delete this entry?')) return;
@@ -1548,7 +1550,12 @@ function initNutritionForm() {
         const date = document.getElementById('nutrition-date').value;
         const caloriesVal = document.getElementById('nutrition-calories').value;
         const proteinVal = document.getElementById('nutrition-protein').value;
-        if (!date || (!caloriesVal && !proteinVal)) { alert('Please enter a date and at least one of calories or protein.'); return; }
+        const fatVal = document.getElementById('nutrition-fat').value;
+        const carbsVal = document.getElementById('nutrition-carbs').value;
+        if (!date || (!caloriesVal && !proteinVal && !fatVal && !carbsVal)) {
+            alert('Please enter a date and at least one of calories, protein, fat, or carbs.');
+            return;
+        }
 
         const entries = getNutrition();
         entries.push({
@@ -1556,11 +1563,15 @@ function initNutritionForm() {
             date,
             calories: caloriesVal ? parseFloat(caloriesVal) : null,
             protein: proteinVal ? parseFloat(proteinVal) : null,
+            fat: fatVal ? parseFloat(fatVal) : null,
+            carbs: carbsVal ? parseFloat(carbsVal) : null,
         });
         saveNutrition(entries);
 
         document.getElementById('nutrition-calories').value = '';
         document.getElementById('nutrition-protein').value = '';
+        document.getElementById('nutrition-fat').value = '';
+        document.getElementById('nutrition-carbs').value = '';
         renderNutritionList();
     });
 }

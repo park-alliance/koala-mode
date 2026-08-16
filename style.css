@@ -210,7 +210,8 @@ header .link-btn {
     align-items: center;
     gap: 6px;
     width: fit-content;
-    margin: 0 0 14px auto;
+    flex-shrink: 0;
+    margin-left: auto;
     padding: 5px 10px;
     border: 1px solid var(--border);
     border-radius: 8px;
@@ -592,7 +593,30 @@ input, select {
 }
 
 #log-start-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
     margin-bottom: 16px;
+}
+
+.log-session-header-row {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    margin-bottom: 12px;
+}
+
+.log-session-header-row h2 {
+    margin: 0;
+    flex: 1;
+    min-width: 120px;
+}
+
+.log-session-header-row .back-btn {
+    margin-bottom: 0;
+    flex-shrink: 0;
 }
 
 .session-nav {
