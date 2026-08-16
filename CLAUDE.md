@@ -102,14 +102,24 @@ living on their own tabs.
   "Exit planned workout" + the plan name during an active session. Its
   Start/Pause and reset controls are compact icon-only buttons (not text) so
   the whole widget reliably fits on one row next to the button on narrow
-  phone widths instead of wrapping.
-- Weight & Nutrition tab: one shared date field, then two independent log
-  actions below it - Weight has its own "Log Weight" button (solid-accent
-  styled so it stands out), the four macros (Calories/Protein/Fat/Carbs) in
-  a 1x4 row share one "Log Nutrition" button. The two groups are visually
-  distinguished by background tint, not separate headers. History for each
-  stays in its own section below (nutrition as a Date/Cal/Protein/Fat/Carbs
-  table).
+  phone widths instead of wrapping. Tapping the current time (when not
+  running) opens a scroll-wheel minutes/seconds picker (`#rest-timer-
+  picker-overlay`) instead of a text field - deliberate, since `inputmode=
+  "numeric"` gives mobile keyboards no ":" or "." key, making M:SS/fractional
+  entry effectively untypeable on a phone.
+- Weight & Nutrition tab: two independent log actions, each its own form
+  with its own date field sitting next to its own submit button (`bw-date` +
+  Log Weight, `nutrition-date` + Log Nutrition) via the shared
+  `.log-submit-row` pattern (date-row on the left, button pushed right via
+  `margin-left:auto` on the row's last child - not `justify-content:
+  space-between`, so it still looks right if one sibling is hidden). Weight
+  is laid out as [input row] then [date+button row] to match the shape of
+  the Nutrition box's [4-macro row] then [date+button row]. The two groups
+  are visually distinguished by background tint (`.log-group-weight` vs.
+  `.log-group-nutrition`), not separate headers. History for each stays in
+  its own section below (nutrition as a Date/Cal/Protein/Fat/Carbs table).
+  Same `.log-submit-row` date-next-to-button pattern is used for the
+  exercise set-log form and the Daily Review "Save Review" row too.
 - Daily Review: customizable questions (activity, workout quality by
   default) — see `DEFAULT_REVIEW_QUESTIONS` in `app.js`
 - Offline support via service worker (network-first)

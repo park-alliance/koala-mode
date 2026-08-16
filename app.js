@@ -1626,11 +1626,12 @@ function renderBodyweightList() {
 }
 
 function initBodyTab() {
-    document.getElementById('body-log-date').value = todayStr();
+    document.getElementById('bw-date').value = todayStr();
+    document.getElementById('nutrition-date').value = todayStr();
 
     document.getElementById('log-weight-form').addEventListener('submit', e => {
         e.preventDefault();
-        const date = document.getElementById('body-log-date').value;
+        const date = document.getElementById('bw-date').value;
         const weightVal = document.getElementById('bw-weight').value;
         if (!date || !weightVal) { alert('Please choose a date and enter a weight.'); return; }
 
@@ -1644,7 +1645,7 @@ function initBodyTab() {
 
     document.getElementById('log-nutrition-form').addEventListener('submit', e => {
         e.preventDefault();
-        const date = document.getElementById('body-log-date').value;
+        const date = document.getElementById('nutrition-date').value;
         const caloriesVal = document.getElementById('nutrition-calories').value;
         const proteinVal = document.getElementById('nutrition-protein').value;
         const fatVal = document.getElementById('nutrition-fat').value;

@@ -164,10 +164,6 @@
                 <h2 id="log-detail-exercise-name"></h2>
 
                 <form id="log-set-form">
-                    <div class="date-row" id="log-date-row">
-                        <label for="log-date">Date</label>
-                        <input type="date" id="log-date" class="date-compact" required>
-                    </div>
                     <div class="form-row form-row-2">
                         <label>Weight (lb)
                             <input type="number" id="log-weight" step="0.5" inputmode="decimal" placeholder="135">
@@ -188,8 +184,12 @@
                         <input type="number" id="log-set-number" step="1" min="1" inputmode="numeric" class="hidden">
                     </div>
                     <input type="text" id="log-comment" placeholder="Comment (optional)" class="hidden">
+                    <button type="button" class="link-btn" id="log-comment-toggle">+ Add comment</button>
                     <div class="form-row log-submit-row">
-                        <button type="button" class="link-btn" id="log-comment-toggle">+ Add comment</button>
+                        <div class="date-row" id="log-date-row">
+                            <label for="log-date">Date</label>
+                            <input type="date" id="log-date" class="date-compact" required>
+                        </div>
                         <button type="submit" class="primary-btn">Log Set</button>
                     </div>
                 </form>
@@ -232,16 +232,19 @@
 
         <!-- BODY & NOTES TAB -->
         <section id="tab-body" class="tab-panel">
-            <div class="date-row">
-                <label for="body-log-date">Date</label>
-                <input type="date" id="body-log-date" class="date-compact" required>
-            </div>
+            <h2>Weight &amp; Nutrition</h2>
 
             <form id="log-weight-form" class="log-group log-group-weight">
-                <div class="form-row form-row-2">
+                <div class="form-row">
                     <label>Weight (lb)
                         <input type="number" id="bw-weight" step="0.1" inputmode="decimal" placeholder="180">
                     </label>
+                </div>
+                <div class="form-row log-submit-row">
+                    <div class="date-row">
+                        <label for="bw-date">Date</label>
+                        <input type="date" id="bw-date" class="date-compact" required>
+                    </div>
                     <button type="submit" class="primary-btn primary-btn-solid">Log Weight</button>
                 </div>
             </form>
@@ -261,7 +264,13 @@
                         <input type="number" id="nutrition-carbs" step="1" inputmode="numeric" placeholder="220">
                     </label>
                 </div>
-                <button type="submit" class="primary-btn">Log Nutrition</button>
+                <div class="form-row log-submit-row">
+                    <div class="date-row">
+                        <label for="nutrition-date">Date</label>
+                        <input type="date" id="nutrition-date" class="date-compact" required>
+                    </div>
+                    <button type="submit" class="primary-btn">Log Nutrition</button>
+                </div>
             </form>
 
             <h3>Weight</h3>
@@ -279,6 +288,7 @@
         <!-- DAILY REVIEW TAB -->
         <section id="tab-review" class="tab-panel">
             <div class="review-header-row">
+                <h2>Daily Review</h2>
                 <button type="button" class="gear-btn" id="review-settings-gear-btn" aria-label="Review settings" title="Review settings"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg></button>
             </div>
 
@@ -290,17 +300,19 @@
             </div>
 
             <form id="review-form">
-                <div class="date-row">
-                    <label for="review-date">Date</label>
-                    <input type="date" id="review-date" class="date-compact" required>
-                </div>
                 <div id="review-questions-fields"></div>
                 <div class="form-row">
                     <label>Note (optional)
                         <input type="text" id="review-note" placeholder="How did today feel?">
                     </label>
                 </div>
-                <button type="submit" class="primary-btn">Save Review</button>
+                <div class="form-row log-submit-row">
+                    <div class="date-row">
+                        <label for="review-date">Date</label>
+                        <input type="date" id="review-date" class="date-compact" required>
+                    </div>
+                    <button type="submit" class="primary-btn">Save Review</button>
+                </div>
             </form>
 
             <p class="card-sub" id="review-stats"></p>

@@ -160,13 +160,7 @@ header .link-btn {
     margin: 10px 0 16px;
 }
 
-.review-header-row {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    margin-bottom: 12px;
-}
-
+.review-header-row,
 .log-directly-header-row {
     display: flex;
     justify-content: space-between;
@@ -174,6 +168,7 @@ header .link-btn {
     margin-bottom: 12px;
 }
 
+.review-header-row h2,
 .log-directly-header-row h2 {
     margin: 0;
 }
@@ -371,10 +366,15 @@ header .link-btn {
     gap: 3px;
     padding: 8px 4px 6px;
     border: none;
+    border-left: 1px solid var(--border);
     background: none;
     font-size: 11px;
     color: var(--muted);
     cursor: pointer;
+}
+
+.tab-btn:first-child {
+    border-left: none;
 }
 
 .tab-btn.active {
@@ -569,8 +569,11 @@ form {
 .log-submit-row {
     flex-direction: row;
     align-items: center;
-    justify-content: space-between;
     gap: 12px;
+}
+
+.log-submit-row > *:last-child {
+    margin-left: auto;
 }
 
 .date-row {
@@ -578,6 +581,10 @@ form {
     align-items: center;
     gap: 8px;
     margin-bottom: 12px;
+}
+
+.log-submit-row .date-row {
+    margin-bottom: 0;
 }
 
 .date-row label {
