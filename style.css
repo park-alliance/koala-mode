@@ -16,18 +16,31 @@
     box-sizing: border-box;
 }
 
+html, body {
+    height: 100%;
+}
+
 body {
     margin: 0;
     font-family: -apple-system, Segoe UI, Arial, sans-serif;
     background: var(--bg);
     color: var(--text);
-    padding-bottom: 40px;
+}
+
+/* Full-height flex column instead of a fixed-position bottom nav: iOS
+   Safari's position:fixed jitters/floats during scroll and when the
+   toolbar shows/hides, especially as a home-screen PWA. Making #app-shell
+   the scroll container's parent and #tab-nav a normal flex child keeps the
+   nav pinned without that jank. */
+#app-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    height: 100dvh;
 }
 
 #app-top {
-    position: sticky;
-    top: 0;
-    z-index: 10;
+    flex-shrink: 0;
 }
 
 header {
@@ -210,11 +223,7 @@ header .link-btn {
 }
 
 #tab-nav {
-    position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    z-index: 20;
+    flex-shrink: 0;
     display: flex;
     background: var(--card-bg);
     border-top: 1px solid var(--border);
@@ -224,15 +233,23 @@ header .link-btn {
 #rest-timer {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     width: fit-content;
     flex-shrink: 0;
     margin-left: auto;
-    padding: 5px 10px;
+    padding: 5px 8px;
     border: 1px solid var(--border);
     border-radius: 8px;
     background: var(--card-bg);
     box-shadow: var(--shadow);
+}
+
+#rest-timer .small-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    line-height: 1;
 }
 
 #rest-timer-label {
@@ -296,10 +313,13 @@ header .link-btn {
 }
 
 main {
+    flex: 1;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
     max-width: 600px;
+    width: 100%;
     margin: 0 auto;
     padding: 16px;
-    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 
 .tab-panel {

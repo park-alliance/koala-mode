@@ -469,10 +469,8 @@ function populateDetailView(exerciseId) {
         document.getElementById('log-date-row').classList.toggle('hidden', !!activeSession);
         document.getElementById('log-date').value = dateForToday;
 
-        const mostRecentLog = getLogs()
-            .filter(l => l.exerciseId === exerciseId)
-            .reduce((latest, l) => (!latest || l.id > latest.id ? l : latest), null);
-        document.getElementById('log-weight').value = (mostRecentLog && mostRecentLog.weight != null) ? mostRecentLog.weight : '';
+        const mostRecentLog = mostRecentLoggedWeight(exerciseId);
+        document.getElementById('log-weight').value = mostRecentLog ? mostRecentLog.weight : '';
         document.getElementById('log-reps').value = '';
         collapseLogComment();
         updateLogSetNumberUI(nextSetNumberForToday(exerciseId, dateForToday));
@@ -495,6 +493,16 @@ function nextSetNumberForToday(exerciseId, date) {
     const logs = getLogs().filter(l => l.exerciseId === exerciseId && l.date === date);
     const maxSet = logs.reduce((max, l) => Math.max(max, l.set || 0), 0);
     return maxSet + 1;
+}
+
+// Most recent by workout date (then set number), not by log id - a backdated
+// entry gets a higher id than same-day entries logged earlier, which would
+// otherwise make prefill pick a stale/wrong weight.
+function mostRecentLoggedWeight(exerciseId) {
+    const logs = getLogs()
+        .filter(l => l.exerciseId === exerciseId && l.weight != null)
+        .sort((a, b) => b.date.localeCompare(a.date) || (b.set || 0) - (a.set || 0));
+    return logs[0] || null;
 }
 
 function renderLogHistory(exerciseId) {
@@ -614,8 +622,8 @@ function initLogTab() {
         saveLogs(logs);
 
         const nextSet = (setVal ? parseInt(setVal, 10) : nextSetNumberForToday(logCurrentExerciseId, date)) + 1;
-        document.getElementById('log-weight').value = '';
-        document.getElementById('log-reps').value = '';
+        // Weight (and reps) carry over instead of clearing - most sets of an
+        // exercise use the same weight, so re-typing it each set is friction.
         collapseLogComment();
         updateLogSetNumberUI(nextSet);
 
@@ -2147,9 +2155,18 @@ function updateRestTimerDisplay() {
     document.getElementById('rest-timer').classList.toggle('done', restTimerRemaining === 0 && !restTimerInterval);
 }
 
+const REST_TIMER_PLAY_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>';
+const REST_TIMER_PAUSE_ICON = '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>';
+
+function setRestTimerToggleIcon(running) {
+    const btn = document.getElementById('rest-timer-toggle');
+    btn.innerHTML = running ? REST_TIMER_PAUSE_ICON : REST_TIMER_PLAY_ICON;
+    btn.title = running ? 'Pause' : 'Start';
+}
+
 function startRestTimer() {
     if (restTimerRemaining <= 0) restTimerRemaining = restTimerDefault;
-    document.getElementById('rest-timer-toggle').textContent = 'Pause';
+    setRestTimerToggleIcon(true);
     restTimerInterval = setInterval(() => {
         restTimerRemaining--;
         updateRestTimerDisplay();
@@ -2161,7 +2178,7 @@ function startRestTimer() {
 function pauseRestTimer() {
     clearInterval(restTimerInterval);
     restTimerInterval = null;
-    document.getElementById('rest-timer-toggle').textContent = 'Start';
+    setRestTimerToggleIcon(false);
     updateRestTimerDisplay();
 }
 
@@ -2169,7 +2186,7 @@ function resetRestTimer() {
     clearInterval(restTimerInterval);
     restTimerInterval = null;
     restTimerRemaining = restTimerDefault;
-    document.getElementById('rest-timer-toggle').textContent = 'Start';
+    setRestTimerToggleIcon(false);
     updateRestTimerDisplay();
 }
 
