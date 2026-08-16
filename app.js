@@ -298,11 +298,12 @@ function renderExercisePickerButtons(containerId, excludeIds, onPick) {
     const categories = getCategories();
     const exercises = getExercises();
 
-    // Default to "all expanded" the first time a given picker is used, but
-    // remember what the user collapses across re-renders (e.g. after adding
-    // an exercise, which rebuilds this list to exclude the new pick).
+    // Default to "all collapsed" the first time a given picker is used, so
+    // you're not stuck scrolling past every category to find the one you
+    // want - remember what the user expands across re-renders (e.g. after
+    // adding an exercise, which rebuilds this list to exclude the new pick).
     if (!pickerOpenCategories[containerId]) {
-        pickerOpenCategories[containerId] = new Set(categories);
+        pickerOpenCategories[containerId] = new Set();
     }
     const openSet = pickerOpenCategories[containerId];
 
