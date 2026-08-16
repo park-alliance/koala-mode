@@ -83,12 +83,14 @@ living on their own tabs.
   the same weight.
 - Exercise/category management lives on the Log tab: "+ New Category" /
   "+ New Exercise" ghost tiles are always visible in the plain grids (no
-  gear needed to add). A gear icon next to "Log Directly" additionally
-  reveals a management panel for rename/delete/move-between-categories
-  (hides the plain grid while open), and a gear icon on a category's
-  exercise list does the same for rename/delete of that category's
-  exercises. First-run setup wizard (exercise templates by muscle group)
-  auto-shows there when a user has zero categories.
+  gear needed to add). A gear icon next to "Log Directly" reveals a flat
+  category list - rename/delete only (pencil/x icons); no exercise listing
+  or move-to there anymore. A gear icon on a category's own exercise list
+  (e.g. under "Legs") is where individual exercises get renamed, deleted,
+  or moved to another category (pencil / arrow+select / x, all on one row
+  per exercise) - `renderExerciseListManagerPanel()` in `app.js`. First-run
+  setup wizard (exercise templates by muscle group) auto-shows in the
+  category gear panel when a user has zero categories.
 - Plans: saved/planned workouts, managed from the "Start / Plan a Workout"
   picker screen - always-visible "+ New Plan" button, a row of toggleable
   category filter chips that live-filter the list (OR match: a plan shows
@@ -123,12 +125,25 @@ living on their own tabs.
 - Daily Review: customizable questions (activity, workout quality by
   default) — see `DEFAULT_REVIEW_QUESTIONS` in `app.js`
 - Offline support via service worker (network-first)
+- No persistent top header bar (removed to save vertical space on phones).
+  "Sign Out" instead lives inside each of the three gear panels (Log
+  Directly, a category's exercise list, Daily Review settings) as a
+  `.sign-out-link` at the bottom, below a divider - two are static HTML,
+  the third is re-added on every render of
+  `renderExerciseListManagerPanel()` since that panel's innerHTML is fully
+  replaced each time.
+- Date fields no longer show a "Date" label anywhere (the date picker
+  itself makes that obvious) - just the bare `<input type="date">`, usually
+  paired with that form's submit button via `.log-submit-row`.
 
 ## Style
 
 - Grayscale-ish base with purple accent (`#6c5ce7` theme color)
-- Icons are inline monochrome SVGs (`stroke="currentColor"`, no fill),
-  matching the gear-icon path already used for session-row options - not
-  emoji, kept flat/silhouette style throughout
+- Icons are inline monochrome SVGs (`stroke="currentColor"`, no fill), not
+  emoji, kept flat/silhouette style throughout. Shared row-action icons
+  (`ICON_PENCIL` = rename, `ICON_X` = delete, `ICON_ARROW_RIGHT` = move to
+  another category) are defined once near `escapeHtml()` in `app.js` and
+  reused everywhere; delete buttons use `.icon-btn.danger-btn` (transparent,
+  soft red) instead of the old solid `.danger-btn` "Delete" text button.
 - No build tooling — edit `app.js`/`style.css`/`index.html` directly and
   reload

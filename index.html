@@ -42,12 +42,6 @@
 
     <!-- APP SHELL -->
     <div id="app-shell" class="hidden">
-    <div id="app-top">
-        <header>
-            <img src="icon-192.png" alt="" class="header-icon">
-            <button type="button" class="link-btn" id="sign-out-btn">Sign Out</button>
-        </header>
-    </div>
 
     <main>
         <!-- LOG TAB -->
@@ -144,6 +138,7 @@
                     <div id="exercise-manager-normal">
                         <div id="category-manager-list"></div>
                     </div>
+                    <button type="button" class="link-btn sign-out-link" id="sign-out-btn-1">Sign Out</button>
                 </div>
 
                 <div id="log-category-list" class="button-grid"></div>
@@ -184,19 +179,17 @@
                         <input type="number" id="log-set-number" step="1" min="1" inputmode="numeric" class="hidden">
                     </div>
                     <input type="text" id="log-comment" placeholder="Comment (optional)" class="hidden">
-                    <button type="button" class="link-btn" id="log-comment-toggle">+ Add comment</button>
                     <div class="form-row log-submit-row">
                         <div class="date-row" id="log-date-row">
-                            <label for="log-date">Date</label>
                             <input type="date" id="log-date" class="date-compact" required>
                         </div>
+                        <button type="button" class="link-btn" id="log-comment-toggle">+ Note</button>
                         <button type="submit" class="primary-btn">Log Set</button>
                     </div>
                 </form>
 
                 <form id="log-cardio-form" class="hidden">
                     <div class="date-row" id="cardio-date-row">
-                        <label for="cardio-date">Date</label>
                         <input type="date" id="cardio-date" class="date-compact" required>
                     </div>
                     <div class="form-row form-row-3">
@@ -242,7 +235,6 @@
                 </div>
                 <div class="form-row log-submit-row">
                     <div class="date-row">
-                        <label for="bw-date">Date</label>
                         <input type="date" id="bw-date" class="date-compact" required>
                     </div>
                     <button type="submit" class="primary-btn primary-btn-solid">Log Weight</button>
@@ -266,7 +258,6 @@
                 </div>
                 <div class="form-row log-submit-row">
                     <div class="date-row">
-                        <label for="nutrition-date">Date</label>
                         <input type="date" id="nutrition-date" class="date-compact" required>
                     </div>
                     <button type="submit" class="primary-btn">Log Nutrition</button>
@@ -297,6 +288,7 @@
                 <p class="card-sub">Options are ordered worst to best - that order controls the grid's color coding.</p>
                 <div id="questions-manager-list"></div>
                 <button type="button" class="small-btn" id="add-question-btn">+ Add Question</button>
+                <button type="button" class="link-btn sign-out-link" id="sign-out-btn-2">Sign Out</button>
             </div>
 
             <form id="review-form">
@@ -308,7 +300,6 @@
                 </div>
                 <div class="form-row log-submit-row">
                     <div class="date-row">
-                        <label for="review-date">Date</label>
                         <input type="date" id="review-date" class="date-compact" required>
                     </div>
                     <button type="submit" class="primary-btn">Save Review</button>

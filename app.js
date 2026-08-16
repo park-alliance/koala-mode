@@ -149,6 +149,11 @@ function escapeHtml(str) {
     return div.innerHTML;
 }
 
+// Shared row-action icons (pencil = rename, x = delete) - flat outline
+// style matching the gear/timer icons.
+const ICON_PENCIL = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z"></path></svg>';
+const ICON_X = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
+
 // ============ TREND CHARTS (shared by exercise history and bodyweight) ============
 // Plain inline SVG, no chart library - point counts here are at most in the low
 // hundreds (a single exercise's full history), so this renders instantly.
@@ -428,16 +433,21 @@ function renderLogExerciseStepContent(category) {
 function renderExerciseListManagerPanel(category) {
     const panel = document.getElementById('exercise-list-manager-panel');
     const exercises = getExercises().filter(e => e.category === category);
+    const otherCategories = getCategories().filter(c => c !== category);
     const rowsHtml = exercises.map(ex => `
         <div class="exercise-row">
             <span>${escapeHtml(ex.name)}</span>
             <span class="exercise-row-actions">
-                <button class="small-btn rename-ex-btn" data-id="${ex.id}">Rename</button>
-                <button class="small-btn danger-btn delete-ex-btn" data-id="${ex.id}">Delete</button>
+                <button class="icon-btn rename-ex-btn" data-id="${ex.id}" title="Rename" aria-label="Rename">${ICON_PENCIL}</button>
+                <select class="move-ex-select" data-id="${ex.id}">
+                    <option value="">Move to...</option>
+                    ${otherCategories.map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
+                </select>
+                <button class="icon-btn danger-btn delete-ex-btn" data-id="${ex.id}" title="Delete" aria-label="Delete">${ICON_X}</button>
             </span>
         </div>`).join('') || '<p class="no-data">No exercises yet.</p>';
 
-    panel.innerHTML = `<button type="button" class="small-btn gear-add-btn" id="add-exercise-btn">+ Add Exercise</button>${rowsHtml}`;
+    panel.innerHTML = `<button type="button" class="small-btn gear-add-btn" id="add-exercise-btn">+ Add Exercise</button>${rowsHtml}<button type="button" class="link-btn sign-out-link" id="sign-out-btn-3">Sign Out</button>`;
 
     document.getElementById('add-exercise-btn').addEventListener('click', () => {
         const name = prompt('New exercise name:');
@@ -449,6 +459,12 @@ function renderExerciseListManagerPanel(category) {
     panel.querySelectorAll('.delete-ex-btn').forEach(btn => {
         btn.addEventListener('click', () => deleteExercise(btn.dataset.id));
     });
+    panel.querySelectorAll('.move-ex-select').forEach(select => {
+        select.addEventListener('change', () => {
+            if (select.value) moveExercise(select.dataset.id, select.value);
+        });
+    });
+    document.getElementById('sign-out-btn-3').addEventListener('click', () => auth.signOut());
 }
 
 function populateDetailView(exerciseId) {
@@ -534,7 +550,7 @@ function renderLogHistory(exerciseId) {
             const comment = l.comment ? ` <span class="card-sub">${escapeHtml(l.comment)}</span>` : '';
             html += `<div class="history-set">
                 <span>Set ${l.set || '-'}: ${main}${comment}</span>
-                <button class="small-btn danger-btn" data-id="${l.id}">Delete</button>
+                <button class="icon-btn danger-btn" data-id="${l.id}" title="Delete" aria-label="Delete">${ICON_X}</button>
             </div>`;
         });
         html += `</div>`;
@@ -699,7 +715,7 @@ function renderCardioHistory(exerciseId) {
             const comment = l.comment ? ` <span class="card-sub">${escapeHtml(l.comment)}</span>` : '';
             html += `<div class="history-set">
                 <span>${escapeHtml(main)}${comment}</span>
-                <button class="small-btn danger-btn" data-id="${l.id}">Delete</button>
+                <button class="icon-btn danger-btn" data-id="${l.id}" title="Delete" aria-label="Delete">${ICON_X}</button>
             </div>`;
         });
         html += `</div>`;
@@ -987,7 +1003,7 @@ function planCardHtml(p, exercises) {
             <button type="button" class="small-btn" data-start="${p.id}">Start</button>
             <button type="button" class="small-btn" data-edit="${p.id}">Edit</button>
             <button type="button" class="small-btn" data-copy="${p.id}">Copy</button>
-            <button type="button" class="small-btn danger-btn" data-delete="${p.id}">Delete</button>
+            <button type="button" class="icon-btn danger-btn" data-delete="${p.id}" title="Delete" aria-label="Delete">${ICON_X}</button>
         </span>
     </div>`;
 }
@@ -1228,8 +1244,6 @@ function initPlanTab() {
 
 // ============ CATEGORY MANAGER (gear panel on the Log tab) ============
 
-const openCategoryBlocks = new Set();
-
 function renderCategoryManager() {
     const categories = getCategories();
 
@@ -1260,57 +1274,29 @@ function renderCategoryManager() {
         return;
     }
 
+    // Category settings is just rename/delete for the category itself now -
+    // moving/renaming/deleting individual exercises lives in that category's
+    // own exercise-list gear panel instead (renderExerciseListManagerPanel).
     container.innerHTML = addCategoryBtnHtml + categories.map(cat => {
-        const exList = exercises.filter(e => e.category === cat);
-        const open = openCategoryBlocks.has(cat);
+        const exCount = exercises.filter(e => e.category === cat).length;
         return `
-        <div class="category-block">
-            <div class="category-header" data-cat="${escapeHtml(cat)}">
-                <span class="category-header-title">${escapeHtml(cat)} (${exList.length})</span>
-                <span>
-                    <button class="small-btn rename-cat-btn" data-cat="${escapeHtml(cat)}">Rename</button>
-                    <button class="small-btn danger-btn delete-cat-btn" data-cat="${escapeHtml(cat)}">Delete</button>
-                </span>
-            </div>
-            <div class="category-body ${open ? 'open' : ''}" data-cat-body="${escapeHtml(cat)}">
-                ${exList.map(ex => `
-                    <div class="exercise-row">
-                        <span>${escapeHtml(ex.name)}</span>
-                        <span class="exercise-row-actions">
-                            <select class="move-ex-select" data-id="${ex.id}">
-                                <option value="">Move to...</option>
-                                ${categories.filter(c => c !== cat).map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
-                            </select>
-                        </span>
-                    </div>
-                `).join('') || '<p class="no-data">No exercises yet. Open the category to add one.</p>'}
-            </div>
+        <div class="exercise-row">
+            <span>${escapeHtml(cat)} (${exCount})</span>
+            <span class="exercise-row-actions">
+                <button class="icon-btn rename-cat-btn" data-cat="${escapeHtml(cat)}" title="Rename" aria-label="Rename">${ICON_PENCIL}</button>
+                <button class="icon-btn danger-btn delete-cat-btn" data-cat="${escapeHtml(cat)}" title="Delete" aria-label="Delete">${ICON_X}</button>
+            </span>
         </div>`;
     }).join('');
 
     document.getElementById('add-category-btn').addEventListener('click', () => {
         addCategoryFromPrompt(prompt('New category name:'));
     });
-    container.querySelectorAll('.category-header').forEach(header => {
-        header.addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON') return;
-            const cat = header.dataset.cat;
-            if (openCategoryBlocks.has(cat)) openCategoryBlocks.delete(cat);
-            else openCategoryBlocks.add(cat);
-            renderCategoryManager();
-        });
-    });
-
     container.querySelectorAll('.rename-cat-btn').forEach(btn => {
         btn.addEventListener('click', () => renameCategory(btn.dataset.cat));
     });
     container.querySelectorAll('.delete-cat-btn').forEach(btn => {
         btn.addEventListener('click', () => deleteCategory(btn.dataset.cat));
-    });
-    container.querySelectorAll('.move-ex-select').forEach(select => {
-        select.addEventListener('change', () => {
-            if (select.value) moveExercise(select.dataset.id, select.value);
-        });
     });
 }
 
@@ -1323,7 +1309,6 @@ function addExercise(category, name) {
     }
     exercises.push({ id: uniqueExerciseId(category, name), name, category });
     saveExercises(exercises);
-    openCategoryBlocks.add(category);
     renderCategoryManager();
     refreshCategoryDependents();
 }
@@ -1379,7 +1364,6 @@ function moveExercise(id, newCategory) {
     // Only the category field changes; logs reference the exercise id, not its category, so history is untouched.
     exercise.category = newCategory;
     saveExercises(exercises);
-    openCategoryBlocks.add(newCategory);
     renderCategoryManager();
     refreshCategoryDependents();
 }
@@ -1397,11 +1381,6 @@ function renameCategory(oldName) {
     saveCategories(categories.map(c => c === oldName ? trimmed : c));
     saveExercises(getExercises().map(e => e.category === oldName ? { ...e, category: trimmed } : e));
     if (oldName === getCardioCategory()) saveCardioCategory(trimmed);
-
-    if (openCategoryBlocks.has(oldName)) {
-        openCategoryBlocks.delete(oldName);
-        openCategoryBlocks.add(trimmed);
-    }
 
     renderCategoryManager();
     refreshCategoryDependents();
@@ -1610,7 +1589,7 @@ function renderBodyweightList() {
                     <div class="card-title">${e.weight} lb</div>
                     <div class="card-sub">${formatDate(e.date)}${e.comment ? ' · ' + escapeHtml(e.comment) : ''}</div>
                 </div>
-                <button class="small-btn danger-btn" data-id="${e.id}">Delete</button>
+                <button class="icon-btn danger-btn" data-id="${e.id}" title="Delete" aria-label="Delete">${ICON_X}</button>
             </div>
         `).join('');
         container.querySelectorAll('.danger-btn').forEach(btn => {
@@ -1696,7 +1675,7 @@ function renderNutritionList() {
                         <td>${fmt(e.protein, 'g')}</td>
                         <td>${fmt(e.fat, 'g')}</td>
                         <td>${fmt(e.carbs, 'g')}</td>
-                        <td><button type="button" class="small-btn danger-btn" data-id="${e.id}">Delete</button></td>
+                        <td><button type="button" class="icon-btn danger-btn" data-id="${e.id}" title="Delete" aria-label="Delete">${ICON_X}</button></td>
                     </tr>
                     `).join('')}
                 </tbody>
@@ -1818,7 +1797,7 @@ function renderReviewList() {
                 <div class="card-sub">${summary}</div>
                 ${note}
             </div>
-            <button class="small-btn danger-btn" data-id="${r.id}">Delete</button>
+            <button class="icon-btn danger-btn" data-id="${r.id}" title="Delete" aria-label="Delete">${ICON_X}</button>
         </div>`;
     }).join('');
     container.querySelectorAll('.danger-btn').forEach(btn => {
@@ -1876,8 +1855,8 @@ function renderQuestionsManager() {
             <div class="category-header" data-qid="${q.id}">
                 <span class="category-header-title">${escapeHtml(q.label)} (${q.options.length})</span>
                 <span>
-                    <button type="button" class="small-btn rename-question-btn" data-qid="${q.id}">Rename</button>
-                    <button type="button" class="small-btn danger-btn delete-question-btn" data-qid="${q.id}">Delete</button>
+                    <button type="button" class="icon-btn rename-question-btn" data-qid="${q.id}" title="Rename" aria-label="Rename">${ICON_PENCIL}</button>
+                    <button type="button" class="icon-btn danger-btn delete-question-btn" data-qid="${q.id}" title="Delete" aria-label="Delete">${ICON_X}</button>
                 </span>
             </div>
             <div class="category-body open">
@@ -1887,8 +1866,8 @@ function renderQuestionsManager() {
                         <span class="plan-exercise-row-actions">
                             <button type="button" class="small-btn move-option-btn" data-qid="${q.id}" data-idx="${idx}" data-dir="-1" ${idx === 0 ? 'disabled' : ''}>&uarr;</button>
                             <button type="button" class="small-btn move-option-btn" data-qid="${q.id}" data-idx="${idx}" data-dir="1" ${idx === q.options.length - 1 ? 'disabled' : ''}>&darr;</button>
-                            <button type="button" class="small-btn rename-option-btn" data-qid="${q.id}" data-idx="${idx}">Rename</button>
-                            <button type="button" class="small-btn danger-btn delete-option-btn" data-qid="${q.id}" data-idx="${idx}">Delete</button>
+                            <button type="button" class="icon-btn rename-option-btn" data-qid="${q.id}" data-idx="${idx}" title="Rename" aria-label="Rename">${ICON_PENCIL}</button>
+                            <button type="button" class="icon-btn danger-btn delete-option-btn" data-qid="${q.id}" data-idx="${idx}" title="Delete" aria-label="Delete">${ICON_X}</button>
                         </span>
                     </div>
                 `).join('')}
@@ -2122,7 +2101,12 @@ function initAuthUI() {
         }
     });
 
-    document.getElementById('sign-out-btn').addEventListener('click', () => auth.signOut());
+    // Sign Out lives inside each gear panel (Log Directly, exercise list, Daily
+    // Review settings) instead of its own dedicated header/gear - #sign-out-btn-3
+    // is re-rendered dynamically and wires itself in renderExerciseListManagerPanel().
+    document.querySelectorAll('.sign-out-link').forEach(btn => {
+        btn.addEventListener('click', () => auth.signOut());
+    });
 }
 
 // ============ REST TIMER ============
