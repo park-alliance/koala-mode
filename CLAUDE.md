@@ -62,16 +62,25 @@ Important behaviors:
 
 ## Features (as of last update)
 
-Only 3 nav tabs, shown as an iOS-style bottom tab bar (fixed, `position:
-fixed; bottom:0`, `env(safe-area-inset-bottom)` padding for the home
-indicator - viewport meta tag has `viewport-fit=cover` for this to work):
-Workout Log, Weight & Nutrition, Daily Review. Exercise/category management
-and plan management were folded into the Log tab rather than living on
-their own tabs.
+Only 3 nav tabs, shown as an iOS-style bottom tab bar: Workout Log,
+Weight & Nutrition, Daily Review. The bar is a normal flex child at the
+bottom of a full-height flex column (`#app-shell { display:flex;
+flex-direction:column; height:100dvh }`, `main { flex:1; overflow-y:auto }`),
+**not** `position:fixed` - iOS Safari's fixed positioning jitters/floats
+during scroll and toolbar show/hide as a home-screen PWA, so the fix was to
+sidestep it structurally rather than patch around it. `env(safe-area-inset-
+bottom)` padding on the nav still handles the home indicator; viewport meta
+tag has `viewport-fit=cover` for that to resolve correctly. Exercise/category
+management and plan management were folded into the Log tab rather than
+living on their own tabs.
 
 - Session-based workout logging: start a session, log sets (weight/reps),
-  finish/save; weight field pre-fills from the exercise's most recent logged
-  set
+  finish/save. Weight field pre-fills from the exercise's most recent logged
+  set - "most recent" is by workout date then set number
+  (`mostRecentLoggedWeight()`), not by log id, since a backdated entry gets a
+  higher id than same-day entries logged earlier. The field also carries
+  over (not cleared) after logging a set, since most sets of an exercise use
+  the same weight.
 - Exercise/category management lives on the Log tab: "+ New Category" /
   "+ New Exercise" ghost tiles are always visible in the plain grids (no
   gear needed to add). A gear icon next to "Log Directly" additionally
@@ -90,7 +99,10 @@ their own tabs.
   for this; it's computed live so it can't go stale. Picking "New"/"Edit"
   opens the full plan editor as its own screen.
 - Rest timer sits inline next to "Start/Plan Workout" when idle, or next to
-  "Exit planned workout" + the plan name during an active session.
+  "Exit planned workout" + the plan name during an active session. Its
+  Start/Pause and reset controls are compact icon-only buttons (not text) so
+  the whole widget reliably fits on one row next to the button on narrow
+  phone widths instead of wrapping.
 - Weight & Nutrition tab: one shared date field, then two independent log
   actions below it - Weight has its own "Log Weight" button (solid-accent
   styled so it stands out), the four macros (Calories/Protein/Fat/Carbs) in
