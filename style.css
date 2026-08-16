@@ -147,15 +147,29 @@ header .link-btn {
     margin: 10px 0 16px;
 }
 
-.review-header-row {
+.review-header-row,
+.log-directly-header-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 12px;
 }
 
-.review-header-row h2 {
+.review-header-row h2,
+.log-directly-header-row h2 {
     margin: 0;
+}
+
+#exercise-manager-panel,
+#exercise-list-manager-panel {
+    margin-bottom: 16px;
+}
+
+.grid-btn.add-tile {
+    border-style: dashed;
+    color: var(--muted);
+    background: transparent;
+    box-shadow: none;
 }
 
 .gear-btn {
@@ -171,7 +185,7 @@ header .link-btn {
     justify-content: center;
 }
 
-#goals-panel {
+#review-settings-panel {
     margin-bottom: 16px;
 }
 
@@ -191,17 +205,26 @@ header .link-btn {
     border-bottom: 1px solid var(--border);
 }
 
-#tab-log {
-    position: relative;
-}
-
 #rest-timer {
-    position: absolute;
-    top: 0;
-    right: 0;
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 6px;
+    width: fit-content;
+    margin: 0 0 14px auto;
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--card-bg);
+    box-shadow: var(--shadow);
+}
+
+#rest-timer-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
 }
 
 #rest-timer-display {

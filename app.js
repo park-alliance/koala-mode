@@ -5,10 +5,8 @@
 // writes through to Firestore in the background.
 
 const OWNER_EMAIL = 'joseph.vanacore@gmail.com';
-const DATA_KEYS = ['categories', 'exercises', 'logs', 'bodyweight', 'reviews', 'reviewQuestions', 'goals', 'plans', 'activeSession'];
+const DATA_KEYS = ['categories', 'exercises', 'logs', 'bodyweight', 'nutrition', 'reviews', 'reviewQuestions', 'plans', 'activeSession', 'cardioCategory'];
 const DEFAULT_REVIEW_QUESTIONS = [
-    { id: 'calories', label: 'Calories vs. goal', options: ['Above', 'Below', 'At Goal'] },
-    { id: 'protein', label: 'Protein vs. goal', options: ['Below', 'Met Goal'] },
     { id: 'activity', label: 'Activity level', options: ['Not Active', 'Light', 'Moderate', 'High'] },
     { id: 'workout', label: 'Workout', options: ['No', 'Bad', 'Average', 'Good'] },
 ];
@@ -17,11 +15,12 @@ const DATA_DEFAULTS = {
     exercises: [],
     logs: [],
     bodyweight: [],
+    nutrition: [],
     reviews: [],
     reviewQuestions: DEFAULT_REVIEW_QUESTIONS,
-    goals: { calorieGoal: null, proteinGoal: null },
     plans: [],
     activeSession: null,
+    cardioCategory: 'Cardio',
 };
 
 let currentUser = null;
@@ -47,10 +46,11 @@ async function ensureSeeded() {
     batch.set(userDoc('exercises'), { value: isOwner ? SEED_DATA.exercises : [] });
     batch.set(userDoc('logs'), { value: isOwner ? SEED_DATA.logs : [] });
     batch.set(userDoc('bodyweight'), { value: [] });
+    batch.set(userDoc('nutrition'), { value: [] });
     batch.set(userDoc('reviews'), { value: [] });
     batch.set(userDoc('reviewQuestions'), { value: DEFAULT_REVIEW_QUESTIONS });
-    batch.set(userDoc('goals'), { value: { calorieGoal: null, proteinGoal: null } });
     batch.set(userDoc('plans'), { value: [] });
+    batch.set(userDoc('cardioCategory'), { value: 'Cardio' });
     batch.set(seededRef, { value: true });
     await batch.commit();
 }
@@ -90,20 +90,27 @@ function saveLogs(v) { cloudData.logs = v; syncWrite('logs', v); }
 function getBodyweight() { return cloudData.bodyweight; }
 function saveBodyweight(v) { cloudData.bodyweight = v; syncWrite('bodyweight', v); }
 
+function getNutrition() { return cloudData.nutrition; }
+function saveNutrition(v) { cloudData.nutrition = v; syncWrite('nutrition', v); }
+
 function getReviews() { return cloudData.reviews; }
 function saveReviews(v) { cloudData.reviews = v; syncWrite('reviews', v); }
 
 function getReviewQuestions() { return cloudData.reviewQuestions; }
 function saveReviewQuestions(v) { cloudData.reviewQuestions = v; syncWrite('reviewQuestions', v); }
 
-function getGoals() { return cloudData.goals; }
-function saveGoals(v) { cloudData.goals = v; syncWrite('goals', v); }
-
 function getPlans() { return cloudData.plans; }
 function savePlans(v) { cloudData.plans = v; syncWrite('plans', v); }
 
 function getActiveSession() { return cloudData.activeSession; }
 function saveActiveSession(v) { cloudData.activeSession = v; syncWrite('activeSession', v); }
+
+// The category currently treated as "cardio" (its exercises get the cardio
+// log form instead of weight/reps). Tracked by a pointer rather than a
+// hardcoded name so renaming that category doesn't silently break detection -
+// see renameCategory(), which keeps this pointer in sync on rename.
+function getCardioCategory() { return cloudData.cardioCategory; }
+function saveCardioCategory(v) { cloudData.cardioCategory = v; syncWrite('cardioCategory', v); }
 
 // ============ HELPERS ============
 
@@ -345,15 +352,33 @@ function switchTab(tab) {
 let logCurrentCategory = null;
 let logCurrentExerciseId = null;
 
+function addCategoryFromPrompt(name) {
+    if (!name) return;
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    const categories = getCategories();
+    if (categories.some(c => c.toLowerCase() === trimmed.toLowerCase())) {
+        alert('That category already exists.');
+        return;
+    }
+    categories.push(trimmed);
+    saveCategories(categories);
+    renderCategoryManager();
+    refreshCategoryDependents();
+}
+
 function renderLogCategoryStep() {
     const container = document.getElementById('log-category-list');
     const categories = getCategories();
     container.innerHTML = categories.map(cat =>
         `<button class="grid-btn" data-cat="${escapeHtml(cat)}">${escapeHtml(cat)}</button>`
-    ).join('') || '<p class="no-data">No categories yet. Add one in the Exercises tab.</p>';
+    ).join('') + `<button type="button" class="grid-btn add-tile" id="log-add-category-btn">+ New Category</button>`;
 
-    container.querySelectorAll('.grid-btn').forEach(btn => {
+    container.querySelectorAll('.grid-btn[data-cat]').forEach(btn => {
         btn.addEventListener('click', () => selectLogCategory(btn.dataset.cat));
+    });
+    document.getElementById('log-add-category-btn').addEventListener('click', () => {
+        addCategoryFromPrompt(prompt('New category name:'));
     });
 }
 
@@ -362,16 +387,47 @@ function selectLogCategory(category) {
     document.getElementById('log-step-category').classList.add('hidden');
     document.getElementById('log-step-exercise').classList.remove('hidden');
     document.getElementById('log-step-detail').classList.add('hidden');
+    document.getElementById('exercise-list-manager-panel').classList.add('hidden');
+    renderLogExerciseStepContent(category);
+}
+
+function renderLogExerciseStepContent(category) {
     document.getElementById('log-exercise-category-title').textContent = category;
 
     const container = document.getElementById('log-exercise-list');
     const exercises = getExercises().filter(e => e.category === category);
     container.innerHTML = exercises.map(ex =>
         `<button class="grid-btn" data-id="${ex.id}">${escapeHtml(ex.name)}</button>`
-    ).join('') || '<p class="no-data">No exercises in this category yet. Add one in the Exercises tab.</p>';
+    ).join('') + `<button type="button" class="grid-btn add-tile" id="log-add-exercise-btn">+ New Exercise</button>`;
 
-    container.querySelectorAll('.grid-btn').forEach(btn => {
+    container.querySelectorAll('.grid-btn[data-id]').forEach(btn => {
         btn.addEventListener('click', () => selectLogExercise(btn.dataset.id));
+    });
+    document.getElementById('log-add-exercise-btn').addEventListener('click', () => {
+        const name = prompt('New exercise name:');
+        if (name && name.trim()) addExercise(category, name.trim());
+    });
+
+    renderExerciseListManagerPanel(category);
+}
+
+function renderExerciseListManagerPanel(category) {
+    const panel = document.getElementById('exercise-list-manager-panel');
+    const exercises = getExercises().filter(e => e.category === category);
+    panel.innerHTML = exercises.map(ex => `
+        <div class="exercise-row">
+            <span>${escapeHtml(ex.name)}</span>
+            <span class="exercise-row-actions">
+                <button class="small-btn rename-ex-btn" data-id="${ex.id}">Rename</button>
+                <button class="small-btn danger-btn delete-ex-btn" data-id="${ex.id}">Delete</button>
+            </span>
+        </div>`).join('') || '<p class="no-data">No exercises yet. Use the + New Exercise tile above.</p>';
+
+    panel.querySelectorAll('.rename-ex-btn').forEach(btn => {
+        btn.addEventListener('click', () => renameExercise(btn.dataset.id));
+    });
+    panel.querySelectorAll('.delete-ex-btn').forEach(btn => {
+        btn.addEventListener('click', () => deleteExercise(btn.dataset.id));
     });
 }
 
@@ -380,7 +436,7 @@ function populateDetailView(exerciseId) {
     const exercise = getExercises().find(e => e.id === exerciseId);
     document.getElementById('log-detail-exercise-name').textContent = exercise ? exercise.name : '(exercise removed)';
 
-    const isCardio = exercise && exercise.category === 'Cardio';
+    const isCardio = exercise && exercise.category === getCardioCategory();
     document.getElementById('log-set-form').classList.toggle('hidden', isCardio);
     document.getElementById('log-cardio-form').classList.toggle('hidden', !isCardio);
 
@@ -393,7 +449,11 @@ function populateDetailView(exerciseId) {
         const dateForToday = activeSession ? activeSession.date : todayStr();
         document.getElementById('log-date-row').classList.toggle('hidden', !!activeSession);
         document.getElementById('log-date').value = dateForToday;
-        document.getElementById('log-weight').value = '';
+
+        const mostRecentLog = getLogs()
+            .filter(l => l.exerciseId === exerciseId)
+            .reduce((latest, l) => (!latest || l.id > latest.id ? l : latest), null);
+        document.getElementById('log-weight').value = (mostRecentLog && mostRecentLog.weight != null) ? mostRecentLog.weight : '';
         document.getElementById('log-reps').value = '';
         collapseLogComment();
         updateLogSetNumberUI(nextSetNumberForToday(exerciseId, dateForToday));
@@ -677,15 +737,19 @@ let sessionPickerMode = null; // 'swap' | 'add'
 function renderLogPlanPickerList() {
     const container = document.getElementById('log-plan-picker-list');
     const plans = getPlans();
-    if (plans.length === 0) {
-        container.innerHTML = '<p class="no-data">No saved plans yet. Create one in the Plan Workout tab.</p>';
-        return;
-    }
-    container.innerHTML = plans.map(p =>
+    const emptyMsg = plans.length === 0 ? '<p class="no-data">No saved plans yet.</p>' : '';
+    const listHtml = plans.map(p =>
         `<button type="button" class="grid-btn" data-id="${p.id}" style="display:block;width:100%;text-align:left;margin-bottom:8px;">${escapeHtml(p.name)} <span class="card-sub">(${p.exerciseIds.length} exercises)</span></button>`
     ).join('');
+    container.innerHTML = emptyMsg + listHtml
+        + `<button type="button" class="primary-btn" id="log-new-plan-btn" style="display:block;width:100%;margin-top:8px;">+ New Plan</button>`;
+
     container.querySelectorAll('.grid-btn').forEach(btn => {
         btn.addEventListener('click', () => startSessionFromPlan(btn.dataset.id));
+    });
+    document.getElementById('log-new-plan-btn').addEventListener('click', () => {
+        switchTab('plan');
+        openPlanEditor(null);
     });
 }
 
@@ -1044,12 +1108,18 @@ function initPlanTab() {
     });
 }
 
-// ============ EXERCISES TAB ============
+// ============ CATEGORY MANAGER (gear panel on the Log tab) ============
 
 const openCategoryBlocks = new Set();
 
 function renderCategoryManager() {
     const categories = getCategories();
+
+    // Brand-new users (zero categories) always see this panel, regardless of
+    // the gear toggle, so the setup wizard / empty state is never hidden behind a click.
+    if (categories.length === 0) {
+        document.getElementById('exercise-manager-panel').classList.remove('hidden');
+    }
 
     const showWizard = categories.length === 0 && !setupSkipped;
     document.getElementById('setup-wizard').classList.toggle('hidden', !showWizard);
@@ -1063,7 +1133,7 @@ function renderCategoryManager() {
     const exercises = getExercises();
 
     if (categories.length === 0) {
-        container.innerHTML = '<p class="no-data">No categories yet. Add one above.</p>';
+        container.innerHTML = '<p class="no-data">No categories yet. Use the + New Category tile above to add one.</p>';
         return;
     }
 
@@ -1088,15 +1158,9 @@ function renderCategoryManager() {
                                 <option value="">Move to...</option>
                                 ${categories.filter(c => c !== cat).map(c => `<option value="${escapeHtml(c)}">${escapeHtml(c)}</option>`).join('')}
                             </select>
-                            <button class="small-btn rename-ex-btn" data-id="${ex.id}">Rename</button>
-                            <button class="small-btn danger-btn delete-ex-btn" data-id="${ex.id}">Delete</button>
                         </span>
                     </div>
-                `).join('') || '<p class="no-data">No exercises yet.</p>'}
-                <form class="inline-form add-exercise-form" data-cat="${escapeHtml(cat)}" style="margin-top:10px;">
-                    <input type="text" placeholder="New exercise name" required>
-                    <button type="submit" class="small-btn">+ Add</button>
-                </form>
+                `).join('') || '<p class="no-data">No exercises yet. Open the category and use + New Exercise.</p>'}
             </div>
         </div>`;
     }).join('');
@@ -1117,22 +1181,9 @@ function renderCategoryManager() {
     container.querySelectorAll('.delete-cat-btn').forEach(btn => {
         btn.addEventListener('click', () => deleteCategory(btn.dataset.cat));
     });
-    container.querySelectorAll('.delete-ex-btn').forEach(btn => {
-        btn.addEventListener('click', () => deleteExercise(btn.dataset.id));
-    });
-    container.querySelectorAll('.rename-ex-btn').forEach(btn => {
-        btn.addEventListener('click', () => renameExercise(btn.dataset.id));
-    });
     container.querySelectorAll('.move-ex-select').forEach(select => {
         select.addEventListener('change', () => {
             if (select.value) moveExercise(select.dataset.id, select.value);
-        });
-    });
-    container.querySelectorAll('.add-exercise-form').forEach(form => {
-        form.addEventListener('submit', e => {
-            e.preventDefault();
-            const input = form.querySelector('input');
-            addExercise(form.dataset.cat, input.value.trim());
         });
     });
 }
@@ -1219,6 +1270,7 @@ function renameCategory(oldName) {
 
     saveCategories(categories.map(c => c === oldName ? trimmed : c));
     saveExercises(getExercises().map(e => e.category === oldName ? { ...e, category: trimmed } : e));
+    if (oldName === getCardioCategory()) saveCardioCategory(trimmed);
 
     if (openCategoryBlocks.has(oldName)) {
         openCategoryBlocks.delete(oldName);
@@ -1243,24 +1295,15 @@ function deleteCategory(cat) {
 
 function refreshCategoryDependents() {
     renderLogCategoryStep();
+    if (logCurrentCategory) renderLogExerciseStepContent(logCurrentCategory);
 }
 
-function initExercisesTab() {
-    document.getElementById('add-category-form').addEventListener('submit', e => {
-        e.preventDefault();
-        const input = document.getElementById('new-category-name');
-        const name = input.value.trim();
-        if (!name) return;
-        const categories = getCategories();
-        if (categories.some(c => c.toLowerCase() === name.toLowerCase())) {
-            alert('That category already exists.');
-            return;
-        }
-        categories.push(name);
-        saveCategories(categories);
-        input.value = '';
-        renderCategoryManager();
-        refreshCategoryDependents();
+function initExerciseManagerPanels() {
+    document.getElementById('exercise-manager-gear-btn').addEventListener('click', () => {
+        document.getElementById('exercise-manager-panel').classList.toggle('hidden');
+    });
+    document.getElementById('exercise-list-gear-btn').addEventListener('click', () => {
+        document.getElementById('exercise-list-manager-panel').classList.toggle('hidden');
     });
 
     initSetupWizard();
@@ -1467,6 +1510,58 @@ function initBodyTab() {
 
         document.getElementById('bw-weight').value = '';
         renderBodyweightList();
+    });
+
+    initNutritionForm();
+}
+
+function renderNutritionList() {
+    const container = document.getElementById('nutrition-list');
+    const entries = getNutrition().slice().sort((a, b) => b.date.localeCompare(a.date));
+    if (entries.length === 0) {
+        container.innerHTML = '<p class="no-data">No nutrition entries yet.</p>';
+        return;
+    }
+    container.innerHTML = entries.map(e => `
+        <div class="card card-row">
+            <div>
+                <div class="card-title">${e.calories != null ? e.calories + ' cal' : '-'}${e.protein != null ? ' · ' + e.protein + 'g protein' : ''}</div>
+                <div class="card-sub">${formatDate(e.date)}</div>
+            </div>
+            <button class="small-btn danger-btn" data-id="${e.id}">Delete</button>
+        </div>
+    `).join('');
+    container.querySelectorAll('.danger-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            if (!confirm('Delete this entry?')) return;
+            saveNutrition(getNutrition().filter(e => e.id != btn.dataset.id));
+            renderNutritionList();
+        });
+    });
+}
+
+function initNutritionForm() {
+    document.getElementById('nutrition-date').value = todayStr();
+
+    document.getElementById('nutrition-form').addEventListener('submit', e => {
+        e.preventDefault();
+        const date = document.getElementById('nutrition-date').value;
+        const caloriesVal = document.getElementById('nutrition-calories').value;
+        const proteinVal = document.getElementById('nutrition-protein').value;
+        if (!date || (!caloriesVal && !proteinVal)) { alert('Please enter a date and at least one of calories or protein.'); return; }
+
+        const entries = getNutrition();
+        entries.push({
+            id: Date.now(),
+            date,
+            calories: caloriesVal ? parseFloat(caloriesVal) : null,
+            protein: proteinVal ? parseFloat(proteinVal) : null,
+        });
+        saveNutrition(entries);
+
+        document.getElementById('nutrition-calories').value = '';
+        document.getElementById('nutrition-protein').value = '';
+        renderNutritionList();
     });
 }
 
@@ -1767,42 +1862,12 @@ function moveOption(qid, idx, dir) {
 
 function initQuestionsManager() {
     document.getElementById('add-question-btn').addEventListener('click', addQuestion);
-}
-
-function renderGoalsDisplay() {
-    const goals = getGoals();
-    const display = document.getElementById('goals-current-display');
-    if (!goals.calorieGoal && !goals.proteinGoal) {
-        display.textContent = 'No goals set yet. New reviews will be saved without a goal reference.';
-        return;
-    }
-    display.textContent = `Current goals: ${goals.calorieGoal || '-'} calories, ${goals.proteinGoal || '-'}g protein.`;
-}
-
-function renderGoalsForm() {
-    const goals = getGoals();
-    document.getElementById('goal-calories').value = goals.calorieGoal || '';
-    document.getElementById('goal-protein').value = goals.proteinGoal || '';
-    renderGoalsDisplay();
-}
-
-function initGoalsForm() {
-    document.getElementById('goals-gear-btn').addEventListener('click', () => {
-        document.getElementById('goals-panel').classList.toggle('hidden');
-    });
-
-    document.getElementById('goals-form').addEventListener('submit', e => {
-        e.preventDefault();
-        const calorieGoal = parseFloat(document.getElementById('goal-calories').value) || null;
-        const proteinGoal = parseFloat(document.getElementById('goal-protein').value) || null;
-        saveGoals({ calorieGoal, proteinGoal });
-        renderGoalsForm();
-        document.getElementById('goals-panel').classList.add('hidden');
+    document.getElementById('review-settings-gear-btn').addEventListener('click', () => {
+        document.getElementById('review-settings-panel').classList.toggle('hidden');
     });
 }
 
 function initReviewTab() {
-    initGoalsForm();
     initQuestionsManager();
     resetReviewForm();
 
@@ -1828,13 +1893,10 @@ function initReviewTab() {
         const existingIdx = reviews.findIndex(r => r.date === date);
         if (existingIdx >= 0 && !confirm('You already saved a review for this day. Overwrite it?')) return;
 
-        const goals = getGoals();
         const entry = {
             id: existingIdx >= 0 ? reviews[existingIdx].id : Date.now(),
             date,
             answers,
-            calorieGoal: goals.calorieGoal,
-            proteinGoal: goals.proteinGoal,
             note: note || null,
         };
 
@@ -2006,7 +2068,7 @@ function renderEverything() {
     renderPlanList();
     renderCategoryManager();
     renderBodyweightList();
-    renderGoalsForm();
+    renderNutritionList();
     renderQuestionsManager();
     refreshReviewView();
 }
@@ -2018,7 +2080,7 @@ document.addEventListener('DOMContentLoaded', () => {
     initCardioForm();
     initSessionControls();
     initPlanTab();
-    initExercisesTab();
+    initExerciseManagerPanels();
     initBodyTab();
     initReviewTab();
     initAuthUI();

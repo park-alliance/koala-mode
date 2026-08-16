@@ -50,7 +50,6 @@
 
         <nav id="tab-nav">
             <button class="tab-btn active" data-tab="log">Log</button>
-            <button class="tab-btn" data-tab="exercises">Exercises</button>
             <button class="tab-btn" data-tab="plan">Plan Workout</button>
             <button class="tab-btn" data-tab="body">Weight</button>
             <button class="tab-btn" data-tab="review">Daily Review</button>
@@ -61,13 +60,14 @@
         <!-- LOG TAB -->
         <section id="tab-log" class="tab-panel active">
             <div id="rest-timer">
+                <span id="rest-timer-label">Rest Timer</span>
                 <input type="text" id="rest-timer-display" value="2:00" inputmode="numeric">
                 <button type="button" class="small-btn" id="rest-timer-toggle">Start</button>
                 <button type="button" class="small-btn" id="rest-timer-reset" title="Reset">&#8635;</button>
             </div>
 
             <div id="log-start-row">
-                <button class="primary-btn" id="start-planned-btn">&#9654; Start Planned Workout</button>
+                <button class="primary-btn" id="start-planned-btn">&#9654; Start / Plan a Workout</button>
             </div>
 
             <div id="log-plan-picker" class="hidden">
@@ -95,13 +95,44 @@
             </div>
 
             <div id="log-step-category">
-                <h2>Log Directly</h2>
+                <div class="log-directly-header-row">
+                    <h2>Log Directly</h2>
+                    <button type="button" class="gear-btn" id="exercise-manager-gear-btn" aria-label="Manage categories &amp; exercises" title="Manage categories &amp; exercises">⚙️</button>
+                </div>
+
+                <div id="exercise-manager-panel" class="hidden">
+                    <div id="setup-wizard" class="hidden">
+                        <p class="card-sub">Pick a starting template to quickly set up your categories and exercises. Everything is pre-checked: uncheck anything you don't want, and you can always add, rename, or remove things later.</p>
+
+                        <div id="setup-template-choice">
+                            <button type="button" class="grid-btn setup-template-btn" data-template="ppl" style="display:block;width:100%;text-align:left;margin-bottom:10px;">Push / Pull / Legs / Core / Cardio</button>
+                            <button type="button" class="grid-btn setup-template-btn" data-template="muscle" style="display:block;width:100%;text-align:left;margin-bottom:10px;">Muscle Groups (Legs, Arms, Chest, Back, Shoulders, Core, Cardio)</button>
+                            <button type="button" class="link-btn" id="setup-skip-btn">Skip, I'll set up manually</button>
+                        </div>
+
+                        <div id="setup-checklist-view" class="hidden">
+                            <button class="back-btn" id="setup-back-btn">&larr; Choose a different template</button>
+                            <button type="button" class="primary-btn setup-confirm-btn" id="setup-confirm-btn-top">Set Up My Exercises</button>
+                            <div id="setup-checklist-list"></div>
+                            <button type="button" class="primary-btn setup-confirm-btn" id="setup-confirm-btn">Set Up My Exercises</button>
+                        </div>
+                    </div>
+
+                    <div id="exercise-manager-normal">
+                        <div id="category-manager-list"></div>
+                    </div>
+                </div>
+
                 <div id="log-category-list" class="button-grid"></div>
             </div>
 
             <div id="log-step-exercise" class="hidden">
                 <button class="back-btn" id="log-back-to-category">&larr; Categories</button>
-                <h2 id="log-exercise-category-title"></h2>
+                <div class="log-directly-header-row">
+                    <h2 id="log-exercise-category-title"></h2>
+                    <button type="button" class="gear-btn" id="exercise-list-gear-btn" aria-label="Manage exercises in this category" title="Manage exercises in this category">⚙️</button>
+                </div>
+                <div id="exercise-list-manager-panel" class="hidden"></div>
                 <div id="log-exercise-list" class="button-grid"></div>
             </div>
 
@@ -176,37 +207,6 @@
             </div>
         </section>
 
-        <!-- EXERCISES TAB -->
-        <section id="tab-exercises" class="tab-panel">
-            <h2>Exercise Manager</h2>
-
-            <div id="setup-wizard" class="hidden">
-                <p class="card-sub">Pick a starting template to quickly set up your categories and exercises. Everything is pre-checked: uncheck anything you don't want, and you can always add, rename, or remove things later.</p>
-
-                <div id="setup-template-choice">
-                    <button type="button" class="grid-btn setup-template-btn" data-template="ppl" style="display:block;width:100%;text-align:left;margin-bottom:10px;">Push / Pull / Legs / Core / Cardio</button>
-                    <button type="button" class="grid-btn setup-template-btn" data-template="muscle" style="display:block;width:100%;text-align:left;margin-bottom:10px;">Muscle Groups (Legs, Arms, Chest, Back, Shoulders, Core, Cardio)</button>
-                    <button type="button" class="link-btn" id="setup-skip-btn">Skip, I'll set up manually</button>
-                </div>
-
-                <div id="setup-checklist-view" class="hidden">
-                    <button class="back-btn" id="setup-back-btn">&larr; Choose a different template</button>
-                    <button type="button" class="primary-btn setup-confirm-btn" id="setup-confirm-btn-top">Set Up My Exercises</button>
-                    <div id="setup-checklist-list"></div>
-                    <button type="button" class="primary-btn setup-confirm-btn" id="setup-confirm-btn">Set Up My Exercises</button>
-                </div>
-            </div>
-
-            <div id="exercise-manager-normal">
-                <div id="category-manager-list"></div>
-
-                <form id="add-category-form" class="inline-form">
-                    <input type="text" id="new-category-name" placeholder="New category name (e.g. Push, Pull)">
-                    <button type="submit" class="primary-btn">+ Add Category</button>
-                </form>
-            </div>
-        </section>
-
         <!-- PLAN WORKOUT TAB -->
         <section id="tab-plan" class="tab-panel">
             <div id="plan-list-view">
@@ -249,28 +249,32 @@
             </div>
             <div id="bodyweight-list"></div>
             <div id="bodyweight-chart" class="hidden"></div>
+
+            <h2>Nutrition</h2>
+            <form id="nutrition-form" class="form-row form-row-3">
+                <div class="date-row">
+                    <label for="nutrition-date">Date</label>
+                    <input type="date" id="nutrition-date" class="date-compact" required>
+                </div>
+                <label>Calories
+                    <input type="number" id="nutrition-calories" step="1" inputmode="numeric" placeholder="2200">
+                </label>
+                <label>Protein (g)
+                    <input type="number" id="nutrition-protein" step="1" inputmode="numeric" placeholder="180">
+                </label>
+                <button type="submit" class="primary-btn">Log Nutrition</button>
+            </form>
+            <div id="nutrition-list"></div>
         </section>
 
         <!-- DAILY REVIEW TAB -->
         <section id="tab-review" class="tab-panel">
             <div class="review-header-row">
                 <h2>End of Day Review</h2>
-                <button type="button" class="gear-btn" id="goals-gear-btn" aria-label="Goal settings" title="Goal settings">⚙️</button>
+                <button type="button" class="gear-btn" id="review-settings-gear-btn" aria-label="Review settings" title="Review settings">⚙️</button>
             </div>
 
-            <div id="goals-panel" class="hidden">
-                <h3>Goals</h3>
-                <form id="goals-form" class="form-row-3">
-                    <label>Daily Calorie Goal
-                        <input type="number" id="goal-calories" step="1" inputmode="numeric" placeholder="2200">
-                    </label>
-                    <label>Daily Protein Goal (g)
-                        <input type="number" id="goal-protein" step="1" inputmode="numeric" placeholder="180">
-                    </label>
-                    <button type="submit" class="primary-btn">Save Goals</button>
-                </form>
-                <p class="card-sub" id="goals-current-display"></p>
-
+            <div id="review-settings-panel" class="hidden">
                 <h3>Review Questions</h3>
                 <p class="card-sub">Options are ordered worst to best - that order controls the grid's color coding.</p>
                 <div id="questions-manager-list"></div>
