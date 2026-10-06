@@ -8,8 +8,11 @@ app itself, GitHub repo, and Firebase project are all named `koala-mode`.
 - GitHub: `park-alliance/koala-mode` (https://github.com/park-alliance/koala-mode), branch `master`
 - Firebase project: `koala-mode` (Auth + Firestore), config in `firebase-init.js`
 - Owner account (real data, treat carefully): `joseph.vanacore@gmail.com` - see `OWNER_EMAIL` in `app.js`
-- Local `gh` CLI is authenticated as `josephvanacore-del` (has push/admin
-  access to `park-alliance/koala-mode`)
+- Local `gh` CLI is authenticated as `park-alliance` (login "park-alliance",
+  display name "Joey" - this is the actual personal account; `gh auth
+  status` shows a stale cached label of `josephvanacore-del` for the same
+  account, confirmed via `gh api user`, so trust `gh api user` over `gh
+  auth status`'s displayed name if they ever disagree again)
 
 ## Structure
 
